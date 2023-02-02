@@ -10,6 +10,8 @@ Play games healthy and live happily
 [参考](https://github.com/hybridgroup/gocv/issues/722)
 
 ```bash
-# 安装必要依赖
+# 安装 gocv 必要依赖
 pacman -S vtk hdf5 glew opencv
+# 安装 go-tesseract 必要依赖
+pacman -S tesseract tesseract-data-eng
 ```
