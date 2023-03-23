@@ -1,3 +1,5 @@
+github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf h1:VSUCKpFV0AfYGslgQSRdBI9HCVp1TCXJmScWD0VXL5g=
+github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf/go.mod h1:UCCi6u6YA8oXfJ15vEMiMGIaWWfLiOacinBPHxLXtEU=
 github.com/hybridgroup/mjpeg v0.0.0-20140228234708-4680f319790e/go.mod h1:eagM805MRKrioHYuU7iKLUyFPVKqVV6um5DAvCkUtXs=
 github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95/go.mod h1:9qAhocn7zKJG+0mI8eUu6xqkFDYS2kb2saOteoSB3cE=
 github.com/otiai10/curr v1.0.0/go.mod h1:LskTG5wDwr8Rs+nNQ+1LlxRjAtTZZjtJW4rMXl6j4vs=

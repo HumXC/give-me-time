@@ -1,0 +1,18 @@
+{
+    "name": "test-project",
+    "discription": "用来测试的工程",
+    "version": "0.0.1",
+    "element": [
+        {
+            "name": "main",
+            "element": [
+                { "name": "start" },
+                {
+                    "name": "text",
+                    "element": [{ "name": "input" }]
+                }
+            ]
+        },
+        { "name": "game" }
+    ]
+}
