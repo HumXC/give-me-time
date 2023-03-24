@@ -31,9 +31,9 @@ type Api interface {
 	// 按下一个元素或坐标，duration 单位是 ms。duration 为 0 时，将会自动把 duration 赋值为 100
 	Press(x, y, duration int) error
 	PressE(e Element, duration int) error
-	// // 滑动
-	// Swipe(Element) (SwipeHandler, error)
-	// SwipeE(x, y int) (SwipeHandler, error)
+	// 滑动
+	// Swipe(Element) SwipeHandler
+	// SwipeE(x, y int) SwipeHandler
 }
 
 // Api 中的 Swipe 函数返回给 lua 一个 SwipeHandler
@@ -90,13 +90,13 @@ func pushElement(l *lua.State, name string, es []Element) {
 
 // 设置在 lua 中的全局函数
 func setFunction(L *lua.State, api Api) {
-	L.Register("press", func(state *lua.State) (rt int) {
+	L.Register("press", func(l *lua.State) (rt int) {
 		getDuration := func(index int) (int, error) {
-			v := L.ToValue(index)
+			v := l.ToValue(index)
 			if v == nil {
 				return 100, nil
 			}
-			d, ok := L.ToInteger(index)
+			d, ok := l.ToInteger(index)
 			if !ok {
 				return 0, fmt.Errorf("duration [%v] is not an integer", v)
 			}
@@ -109,9 +109,9 @@ func setFunction(L *lua.State, api Api) {
 			return d, nil
 		}
 		pushErr := func(err error) {
-			lua.Errorf(L, err.Error())
+			lua.Errorf(l, err.Error())
 		}
-		if name := parseElement(L, 1); name != "" {
+		if name := parseElement(l, 1); name != "" {
 			duration, err := getDuration(2)
 			if err != nil {
 				pushErr(err)
@@ -132,14 +132,14 @@ func setFunction(L *lua.State, api Api) {
 			pushErr(err)
 			return
 		}
-		x, ok := L.ToInteger(1)
+		x, ok := l.ToInteger(1)
 		if !ok {
-			err = fmt.Errorf("x [%v] is not an integer", L.ToValue(1))
+			err = fmt.Errorf("x [%v] is not an integer", l.ToValue(1))
 			pushErr(err)
 		}
-		y, ok2 := L.ToInteger(2)
+		y, ok2 := l.ToInteger(2)
 		if !ok || !ok2 {
-			err := fmt.Errorf("y [%v] is not an integer", L.ToValue(2))
+			err := fmt.Errorf("y [%v] is not an integer", l.ToValue(2))
 			pushErr(err)
 			return
 		}
