@@ -12,18 +12,134 @@ type Script interface {
 	// 返回文件名
 	File() string
 }
-
-type script struct {
-	l    *lua.State
-	file string
+type Storage struct {
+	element map[string]Element
 }
 
-func (s script) Run() error {
+func (s *Storage) Element(key string) Element {
+	return s.element[key]
+}
+
+type script struct {
+	l       *lua.State
+	file    string
+	storage Storage
+}
+
+func (s *script) Run() error {
 	return lua.DoFile(s.l, s.file)
 }
 
-func (s script) File() string {
+func (s *script) File() string {
 	return s.file
+}
+
+// 设置在 lua 中的全局函数
+func (s *script) setFunction(api Api) {
+	s.l.Register("press", func(l *lua.State) (rt int) {
+		if name := parseElement(l, 1); name != "" {
+			duration, err := getDuration(l, 2)
+			if err != nil {
+				pushErr(l, err)
+				return
+			}
+			e := s.storage.Element(name)
+			err = api.PressE(e, duration)
+			if err != nil {
+				pushErr(l, err)
+				return
+			}
+			return
+		}
+		duration, err := getDuration(l, 3)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		x, y, err := getXY(l, 1, 2)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		err = api.Press(x, y, duration)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		return
+	})
+	s.l.Register("swipe", func(l *lua.State) (rt int) {
+		rt = 1
+		var sh SwipeHandler
+		if name := parseElement(l, 1); name != "" {
+			e := s.storage.Element(name)
+			sh = api.SwipeE(e)
+			s.setSwipeHandler(l, sh)
+			return
+		}
+		x, y, err := getXY(l, 1, 2)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		sh = api.Swipe(x, y)
+		s.setSwipeHandler(l, sh)
+		return
+	})
+
+}
+
+func (s *script) setSwipeHandler(l *lua.State, sh SwipeHandler) {
+	if sh == nil {
+		return
+	}
+	l.NewTable()
+
+	l.PushString("to")
+	l.PushGoFunction(func(state *lua.State) (rt int) {
+		rt = 1
+		if name := parseElement(l, 1); name != "" {
+			e := s.storage.Element(name)
+			sh.ToE(e)
+			s.setSwipeHandler(l, sh)
+			return
+		}
+		x, y, err := getXY(l, 1, 2)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		sh.To(x, y)
+		s.setSwipeHandler(l, sh)
+		return
+	})
+	l.SetTable(-3)
+
+	l.PushString("action")
+	l.PushGoFunction(func(state *lua.State) (rt int) {
+		rt = 1
+		duration, err := getDuration(l, 1)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		err = sh.Action(duration)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		return
+	})
+	l.SetTable(-3)
+}
+
+// 设置在 lua 中的全局 E
+func (s *script) setElement(es []Element) {
+	s.l.NewTable()
+	defer func() {
+		s.l.SetGlobal("E")
+	}()
+	pushElement(s.l, "", es)
 }
 
 // “Element” 类型参数是指在 lua 中以 “click(E.main.start)” 的形式调用
@@ -45,23 +161,36 @@ type SwipeHandler interface {
 }
 
 func LoadScript(file string, option *Option, api Api) Script {
-	L := lua.NewState()
-	lua.OpenLibraries(L)
-	setElement(L, option.Element)
-	setFunction(L, api)
-	return script{
-		l:    L,
+	s := &script{
+		l:    lua.NewState(),
 		file: file,
+		storage: Storage{
+			element: make(map[string]Element),
+		},
 	}
+	lua.OpenLibraries(s.l)
+	StoreElement(s.storage.element, "", option.Element)
+	s.setElement(option.Element)
+	s.setFunction(api)
+
+	return s
 }
 
-// 设置在 lua 中的全局 E
-func setElement(l *lua.State, es []Element) {
-	l.NewTable()
-	defer func() {
-		l.SetGlobal("E")
-	}()
-	pushElement(l, "", es)
+// 扁平化 Element 存储到 map 中，Element.Element 将被赋值为 nil 不再嵌套
+func StoreElement(m map[string]Element, name string, es []Element) {
+	if len(es) == 0 {
+		return
+	}
+	if name != "" {
+		name += "."
+	}
+	for _, e := range es {
+		subE := e.Element
+		_name := name + e.Name
+		e.Element = nil
+		m[_name] = e
+		StoreElement(m, _name, subE)
+	}
 }
 
 func pushElement(l *lua.State, name string, es []Element) {
@@ -88,70 +217,8 @@ func pushElement(l *lua.State, name string, es []Element) {
 	}
 }
 
-// 设置在 lua 中的全局函数
-func setFunction(L *lua.State, api Api) {
-
-	L.Register("press", func(l *lua.State) (rt int) {
-
-		if name := parseElement(l, 1); name != "" {
-			duration, err := getDuration(l, 2)
-			if err != nil {
-				pushErr(l, err)
-				return
-			}
-			e := getElement(name)
-			err = api.PressE(e, duration)
-			if err != nil {
-				pushErr(l, err)
-				return
-			}
-			return
-		}
-		duration, err := getDuration(l, 3)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		x, y, err := getXY(l, 1, 2)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		err = api.Press(x, y, duration)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		return
-	})
-	L.Register("swipe", func(l *lua.State) (rt int) {
-		rt = 1
-		var sh SwipeHandler
-		if name := parseElement(l, 1); name != "" {
-			e := getElement(name)
-			sh = api.SwipeE(e)
-			setSwipeHandler(l, sh)
-			return
-		}
-		x, y, err := getXY(l, 1, 2)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		sh = api.Swipe(x, y)
-		setSwipeHandler(l, sh)
-		return
-	})
-
-}
 func pushErr(l *lua.State, err error) {
 	lua.Errorf(l, err.Error())
-}
-func getElement(name string) Element {
-	// TODO: implement 根据 name 获取元素，name 是形如 "main.start" 的字符串
-	return Element{
-		Discription: name,
-	}
 }
 func getDuration(l *lua.State, index int) (int, error) {
 	v := l.ToValue(index)
@@ -196,48 +263,4 @@ func parseElement(L *lua.State, index int) string {
 		return ""
 	}
 	return s
-}
-
-func setSwipeHandler(l *lua.State, sh SwipeHandler) {
-	if sh == nil {
-		return
-	}
-	l.NewTable()
-
-	l.PushString("to")
-	l.PushGoFunction(func(state *lua.State) (rt int) {
-		rt = 1
-		if name := parseElement(l, 1); name != "" {
-			e := getElement(name)
-			sh.ToE(e)
-			setSwipeHandler(l, sh)
-			return
-		}
-		x, y, err := getXY(l, 1, 2)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		sh.To(x, y)
-		setSwipeHandler(l, sh)
-		return
-	})
-	l.SetTable(-3)
-
-	l.PushString("action")
-	l.PushGoFunction(func(state *lua.State) (rt int) {
-		rt = 1
-		duration, err := getDuration(l, 1)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		err = sh.Action(duration)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		return
-	})
-	l.SetTable(-3)
 }
