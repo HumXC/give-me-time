@@ -38,24 +38,33 @@ func TestVerifyElement(t *testing.T) {
 			{Name: "test3"},
 		}},
 	}
+	// 有 Name 包含符号 '.'
+	bad3 := []engine.Element{
+		{Name: "test.a"},
+	}
 	err := engine.VerifyElement("", good1)
 	if err != nil {
-		t.Error(err)
+		t.Error("case [good1] verify failed:", err)
 		return
 	}
 	err = engine.VerifyElement("", good2)
 	if err != nil {
-		t.Error(err)
+		t.Error("case [good2] verify failed:", err)
 		return
 	}
 	err = engine.VerifyElement("", bad1)
 	if err == nil {
-		t.Error("element [bad1] should be an error")
+		t.Error("case [bad1] should be an error, but not")
 		return
 	}
 	err = engine.VerifyElement("", bad2)
 	if err == nil {
-		t.Error("element [bad2] should be an error")
+		t.Error("case [bad2] should be an error, but not")
+		return
+	}
+	err = engine.VerifyElement("", bad3)
+	if err == nil {
+		t.Error("case [bad3] should be an error, but not")
 		return
 	}
 }
@@ -73,7 +82,7 @@ func TestVerifyOption(t *testing.T) {
 	}
 	err = engine.VerifyOption(bad)
 	if err == nil {
-		t.Error("option [bad] should be an error")
+		t.Error("case [bad] should be an error")
 		return
 	}
 }

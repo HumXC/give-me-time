@@ -62,16 +62,16 @@ func pushElement(l *lua.State, name string, es []Element) {
 	push := func(k, v string) {
 		l.PushString(k)
 		l.PushString(v)
+		l.SetTable(-3)
 	}
 	for _, e := range es {
 		_name := name + e.Name
 		l.PushString(e.Name)
-
 		l.NewTable()
-		push("_name", _name)
-		l.SetTable(-3)
 
+		push("_name", _name)
 		pushElement(l, _name, e.Element)
+
 		l.SetTable(-3)
 	}
 }
