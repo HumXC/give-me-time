@@ -10,11 +10,36 @@ import (
 
 type Api struct{}
 
+type SwipeHandler struct{ data string }
+
+func (h *SwipeHandler) To(x, y int) engine.SwipeHandler {
+	h.data += fmt.Sprintf(" to (%d, %d)", x, y)
+	return h
+}
+func (h *SwipeHandler) ToE(e engine.Element) engine.SwipeHandler {
+	h.data += fmt.Sprintf(" to (%s)", e.Discription)
+	return h
+}
+func (h *SwipeHandler) Action(duration int) error {
+	h.data += fmt.Sprintf(" use %d ms.", duration)
+	return nil
+}
+
 func (a *Api) Press(x, y, d int) error {
 	return nil
 }
 func (a *Api) PressE(e engine.Element, d int) error {
 	return nil
+}
+func (a *Api) Swipe(x, y int) engine.SwipeHandler {
+	return &SwipeHandler{
+		data: fmt.Sprintf("from (%d, %d)", x, y),
+	}
+}
+func (a *Api) SwipeE(e engine.Element) engine.SwipeHandler {
+	return &SwipeHandler{
+		data: fmt.Sprintf("from (%s)", e.Discription),
+	}
 }
 func TestLoadScript(t *testing.T) {
 	opt, err := engine.LoadOption("test.json")

@@ -32,8 +32,8 @@ type Api interface {
 	Press(x, y, duration int) error
 	PressE(e Element, duration int) error
 	// 滑动
-	// Swipe(Element) SwipeHandler
-	// SwipeE(x, y int) SwipeHandler
+	Swipe(x, y int) SwipeHandler
+	SwipeE(Element) SwipeHandler
 }
 
 // Api 中的 Swipe 函数返回给 lua 一个 SwipeHandler
@@ -90,66 +90,98 @@ func pushElement(l *lua.State, name string, es []Element) {
 
 // 设置在 lua 中的全局函数
 func setFunction(L *lua.State, api Api) {
+
 	L.Register("press", func(l *lua.State) (rt int) {
-		getDuration := func(index int) (int, error) {
-			v := l.ToValue(index)
-			if v == nil {
-				return 100, nil
-			}
-			d, ok := l.ToInteger(index)
-			if !ok {
-				return 0, fmt.Errorf("duration [%v] is not an integer", v)
-			}
-			if d < 0 {
-				return 0, fmt.Errorf("duration [%d] is not an positive integer", d)
-			}
-			if d == 0 {
-				d = 100
-			}
-			return d, nil
-		}
-		pushErr := func(err error) {
-			lua.Errorf(l, err.Error())
-		}
+
 		if name := parseElement(l, 1); name != "" {
-			duration, err := getDuration(2)
+			duration, err := getDuration(l, 2)
 			if err != nil {
-				pushErr(err)
+				pushErr(l, err)
 				return
 			}
-			// TODO: implement
-			err = api.PressE(Element{
-				Discription: name,
-			}, duration)
+			e := getElement(name)
+			err = api.PressE(e, duration)
 			if err != nil {
-				pushErr(err)
+				pushErr(l, err)
 				return
 			}
 			return
 		}
-		duration, err := getDuration(3)
+		duration, err := getDuration(l, 3)
 		if err != nil {
-			pushErr(err)
+			pushErr(l, err)
 			return
 		}
-		x, ok := l.ToInteger(1)
-		if !ok {
-			err = fmt.Errorf("x [%v] is not an integer", l.ToValue(1))
-			pushErr(err)
-		}
-		y, ok2 := l.ToInteger(2)
-		if !ok || !ok2 {
-			err := fmt.Errorf("y [%v] is not an integer", l.ToValue(2))
-			pushErr(err)
+		x, y, err := getXY(l, 1, 2)
+		if err != nil {
+			pushErr(l, err)
 			return
 		}
 		err = api.Press(x, y, duration)
 		if err != nil {
-			pushErr(err)
+			pushErr(l, err)
 			return
 		}
 		return
 	})
+	L.Register("swipe", func(l *lua.State) (rt int) {
+		rt = 1
+		var sh SwipeHandler
+		if name := parseElement(l, 1); name != "" {
+			e := getElement(name)
+			sh = api.SwipeE(e)
+			setSwipeHandler(l, sh)
+			return
+		}
+		x, y, err := getXY(l, 1, 2)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		sh = api.Swipe(x, y)
+		setSwipeHandler(l, sh)
+		return
+	})
+
+}
+func pushErr(l *lua.State, err error) {
+	lua.Errorf(l, err.Error())
+}
+func getElement(name string) Element {
+	// TODO: implement 根据 name 获取元素，name 是形如 "main.start" 的字符串
+	return Element{
+		Discription: name,
+	}
+}
+func getDuration(l *lua.State, index int) (int, error) {
+	v := l.ToValue(index)
+	if v == nil {
+		return 100, nil
+	}
+	d, ok := l.ToInteger(index)
+	if !ok {
+		return 0, fmt.Errorf("duration [%v] is not an integer", v)
+	}
+	if d < 0 {
+		return 0, fmt.Errorf("duration [%d] is not an positive integer", d)
+	}
+	if d == 0 {
+		d = 100
+	}
+	return d, nil
+}
+func getXY(l *lua.State, indexX, indexY int) (int, int, error) {
+	x, ok := l.ToInteger(indexX)
+	if !ok {
+		err := fmt.Errorf("x [%v] is not an integer", l.ToValue(1))
+		return 0, 0, err
+	}
+	y, ok := l.ToInteger(indexY)
+	if !ok {
+		err := fmt.Errorf("y [%v] is not an integer", l.ToValue(2))
+		return 0, 0, err
+	}
+	return x, y, nil
 }
 
 // 用在 lua.Function 中，判段第 index 个参数是不是 Element
@@ -164,4 +196,48 @@ func parseElement(L *lua.State, index int) string {
 		return ""
 	}
 	return s
+}
+
+func setSwipeHandler(l *lua.State, sh SwipeHandler) {
+	if sh == nil {
+		return
+	}
+	l.NewTable()
+
+	l.PushString("to")
+	l.PushGoFunction(func(state *lua.State) (rt int) {
+		rt = 1
+		if name := parseElement(l, 1); name != "" {
+			e := getElement(name)
+			sh.ToE(e)
+			setSwipeHandler(l, sh)
+			return
+		}
+		x, y, err := getXY(l, 1, 2)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		sh.To(x, y)
+		setSwipeHandler(l, sh)
+		return
+	})
+	l.SetTable(-3)
+
+	l.PushString("action")
+	l.PushGoFunction(func(state *lua.State) (rt int) {
+		rt = 1
+		duration, err := getDuration(l, 1)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		err = sh.Action(duration)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		return
+	})
+	l.SetTable(-3)
 }
