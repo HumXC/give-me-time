@@ -20,3 +20,21 @@ assertString(E.main.start._name, "main.start")
 assertString(E.main.text._name, "main.text")
 assertString(E.main.text.input._name, "main.text.input")
 assertString(E.game._name, "game")
+
+-- 测试全局函数
+-- 调用这个函数说明 fn 必须发生错误
+function assertError(fnName, fn, ...)
+    local noterr = pcall(fn,...)
+    if noterr then 
+        error("function [name:" .. fnName .. "] should be ab error, but not")
+    end
+end
+-- 合法调用
+press(0, 5)
+press(67, 35, 0)
+press(1, 3, 300)
+press(E.main.start, 100)
+-- 非法调用
+assertError("press", press, E)
+assertError("press", press, "main")
+assertError("press", press, E.main.start, -120)

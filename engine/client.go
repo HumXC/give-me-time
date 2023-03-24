@@ -15,7 +15,7 @@ func Load(project string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	scr := LoadScript(path.Join(project, name+".lua"), opt)
+	scr := LoadScript(path.Join(project, name+".lua"), opt, nil)
 	c := &Client{
 		Option: opt,
 		Script: scr,

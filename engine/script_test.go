@@ -2,21 +2,31 @@ package engine_test
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/HumXC/give-me-time/engine"
 	"github.com/Shopify/go-lua"
 )
 
+type Api struct{}
+
+func (a *Api) Press(x, y, d int) error {
+	return nil
+}
+func (a *Api) PressE(e engine.Element, d int) error {
+	return nil
+}
 func TestLoadScript(t *testing.T) {
 	opt, err := engine.LoadOption("test.json")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	s := engine.LoadScript("test.lua", opt)
+	var api engine.Api
+	api = &Api{}
+	s := engine.LoadScript("test.lua", opt, api)
 	err = s.Run()
+
 	if err != nil {
 		t.Error(err)
 	}
@@ -63,6 +73,11 @@ func (t TestSwiper) Action(L *lua.State) int {
 }
 
 type TestApi struct{}
+
+func (t TestApi) Click(L *lua.State) int {
+	fmt.Println("click")
+	return 0
+}
 
 func (t TestApi) Press(L *lua.State) int {
 	fmt.Println("press")
@@ -111,18 +126,4 @@ func (t TestApi) Ocr(L *lua.State) int {
 func (t TestApi) Find(L *lua.State) int {
 	fmt.Println("find")
 	return 0
-}
-
-func TestXsxx(t *testing.T) {
-	var api engine.Api
-	api = TestApi{}
-	L := lua.NewState()
-	lua.OpenLibraries(L)
-
-	L.Register("press", api.Press)
-	L.Register("swipe", api.Swipe)
-	err := lua.DoFile(L, "test.lua")
-	if err != nil {
-		log.Print(err)
-	}
 }
