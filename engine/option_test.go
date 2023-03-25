@@ -71,23 +71,40 @@ func TestVerifyElement(t *testing.T) {
 func TestVerifyOption(t *testing.T) {
 	good := &engine.Option{
 		Name: "test",
+		App:  "test",
 	}
-	bad := &engine.Option{
+	bad1 := &engine.Option{
 		Name: "",
+	}
+	bad2 := &engine.Option{
+		Name: "s",
+		App:  "",
 	}
 	err := engine.VerifyOption(good)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	err = engine.VerifyOption(bad)
+	err = engine.VerifyOption(bad1)
 	if err == nil {
-		t.Error("case [bad] should be an error")
+		t.Error("case [bad1] should be an error")
+		return
+	}
+	err = engine.VerifyOption(bad2)
+	if err == nil {
+		t.Error("case [bad2] should be an error")
 		return
 	}
 }
 func TestLoadOption(t *testing.T) {
 	_, err := engine.LoadOption("test.json")
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestLoadElement(t *testing.T) {
+	_, err := engine.LoadElement("test.json")
 	if err != nil {
 		t.Error(err)
 	}

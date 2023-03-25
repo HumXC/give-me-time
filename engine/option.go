@@ -8,10 +8,10 @@ import (
 )
 
 type Option struct {
-	Name        string    `json:"name"`
-	Discription string    `json:"discription"`
-	Version     string    `json:"version"`
-	Element     []Element `json:"element"`
+	Name        string `json:"name"`
+	Discription string `json:"discription"`
+	App         string `json:"app"`
+	Version     string `json:"version"`
 }
 
 type Element struct {
@@ -35,7 +35,7 @@ type Area struct {
 }
 
 // 从 file 加载 json 文件，反序列化成 Option 并验证 Option 的正确性
-// 内部已经调用了 VerifyOption，VerifyElement
+// 内部已经调用了 VerifyOption
 func LoadOption(file string) (*Option, error) {
 	optB, err := os.ReadFile(file)
 	opt := new(Option)
@@ -49,14 +49,36 @@ func LoadOption(file string) (*Option, error) {
 	return opt, VerifyOption(opt)
 }
 
+// 从 file 加载 json 文件，反序列化成 Element 并验证 Element 的正确性
+// 内部已经调用了 VerifyElement
+func LoadElement(file string) ([]Element, error) {
+	esB, err := os.ReadFile(file)
+	type E struct {
+		Element []Element `json:"element"`
+	}
+	e := E{
+		Element: make([]Element, 0),
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(esB, &e)
+	if err != nil {
+		return nil, err
+	}
+	return e.Element, VerifyElement("", e.Element)
+}
+
 // 检查 Option 中的内容是否符合要求：
 // - Name 不能为空
-// 内部已经调用了 VerifyElement
 func VerifyOption(opt *Option) error {
 	if opt.Name == "" {
-		return fmt.Errorf("option name is empty")
+		return fmt.Errorf("field [name] is empty in option")
 	}
-	VerifyElement("", opt.Element)
+	if opt.App == "" {
+		return fmt.Errorf("field [app] is empty in option")
+	}
 	return nil
 }
 
