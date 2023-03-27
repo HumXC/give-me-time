@@ -16,14 +16,20 @@ type Option struct {
 	Version     string `json:"version"`
 }
 
+// Element 一般用于图像识别
+// 其中 Img, Area, Point 三者起到的作用相同，用于表达一片区域(Img, Area)或者一个点(Point),
+// 这 3 者只能有其一发挥作用，优先级为：Img > Area > Point,
+// 也就是说当 Img 不为空时，Area 和 Point 的值不会有作用。
+// Offset 是相对 Img 或者 Area 的偏移量
 type Element struct {
 	Name        string `json:"name"`
 	Path        string
 	Discription string      `json:"discription"`
-	Src         string      `json:"src"`  // 元素对应的图片
-	Area        Area        `json:"area"` // 元素对应的区域，只有当没有 Src 时才会检查 Area
+	Img         string      `json:"img"`
+	Area        Area        `json:"area"`
+	Point       image.Point `json:"point"`
 	Element     []Element   `json:"element"`
-	Offset      image.Point `json:"offset"` // 该元素在 Src 或 Area 上的偏移位置
+	Offset      image.Point `json:"offset"` // 该元素在 Img 或 Area 上的偏移位置
 }
 
 // 从左上角的点坐标到右下角的点坐标
@@ -151,13 +157,13 @@ func PatchAbsPath(es []Element, basePath string) {
 		return
 	}
 	for i := 0; i < len(es); i++ {
-		if es[i].Src == "" {
+		if es[i].Img == "" {
 			continue
 		}
-		if path.IsAbs(es[i].Src) {
+		if path.IsAbs(es[i].Img) {
 			continue
 		}
-		es[i].Src = path.Join(basePath, es[i].Src)
+		es[i].Img = path.Join(basePath, es[i].Img)
 		PatchAbsPath(es[i].Element, basePath)
 	}
 }

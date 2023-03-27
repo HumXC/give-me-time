@@ -43,14 +43,14 @@ func NewApi(device devices.Device, element []Element) (Api, error) {
 	}
 	FlatElement(a.Element, "", element)
 	for k, e := range a.Element {
-		if e.Src == "" {
+		if e.Img == "" {
 			continue
 		}
-		_, err := os.Stat(e.Src)
+		_, err := os.Stat(e.Img)
 		if err != nil {
-			return nil, fmt.Errorf("can not get element[%s] src[%s] file stat: %w", e.Path, e.Src, err)
+			return nil, fmt.Errorf("can not get element[%s] src[%s] file stat: %w", e.Path, e.Img, err)
 		}
-		a.ElementMat[k] = gocv.IMRead(e.Src, gocv.IMReadUnchanged)
+		a.ElementMat[k] = gocv.IMRead(e.Img, gocv.IMReadUnchanged)
 	}
 	return &a, nil
 }
