@@ -33,7 +33,7 @@ func LoadProject(project string, device devices.Device) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	api, err := NewApi(device.Input, elm)
+	api, err := NewApi(device, elm)
 	if err != nil {
 		return nil, err
 	}
