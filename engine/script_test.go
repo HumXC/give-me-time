@@ -2,6 +2,7 @@ package engine_test
 
 import (
 	"fmt"
+	"image"
 	"testing"
 
 	"github.com/HumXC/give-me-time/engine"
@@ -40,6 +41,15 @@ func (a *Api) SwipeE(e engine.Element) engine.SwipeTo {
 	return &SwipeHandler{
 		data: fmt.Sprintf("from (%s)", e.Name),
 	}
+}
+func (a *Api) FindE(e engine.Element) (image.Point, float32, error) {
+	return image.ZP, 0, nil
+}
+func (a *Api) Lock() error {
+	return nil
+}
+func (a *Api) Unlock() error {
+	return nil
 }
 func TestLoadScript(t *testing.T) {
 	opt, err := engine.LoadOption("test.json")

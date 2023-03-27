@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"os"
@@ -17,7 +18,12 @@ type Api interface {
 	PressE(e Element, duration int) error
 	// 滑动
 	Swipe(x, y int) SwipeTo
-	SwipeE(Element) SwipeTo
+	SwipeE(e Element) SwipeTo
+	// 查找元素
+	FindE(e Element) (image.Point, float32, error)
+	// 锁定
+	Lock() error
+	Unlock() error
 }
 
 // Api 中的 Swipe 函数返回给 lua 一个 SwipeTo
@@ -33,6 +39,7 @@ type ApiImpl struct {
 	Element map[string]Element
 	// ElementMat 是配置了 Src 字段的 Element 对应的 gocv.Mat 实例
 	ElementMat map[string]gocv.Mat
+	Img        *gocv.Mat
 }
 
 func NewApi(device devices.Device, element []Element) (Api, error) {
@@ -43,9 +50,6 @@ func NewApi(device devices.Device, element []Element) (Api, error) {
 	}
 	FlatElement(a.Element, "", element)
 	for k, e := range a.Element {
-		if e.Img == "" {
-			continue
-		}
 		_, err := os.Stat(e.Img)
 		if err != nil {
 			return nil, fmt.Errorf("can not get element[%s] src[%s] file stat: %w", e.Path, e.Img, err)
@@ -54,41 +58,40 @@ func NewApi(device devices.Device, element []Element) (Api, error) {
 	}
 	return &a, nil
 }
+
 func (a *ApiImpl) Press(x, y, duration int) error {
 	return a.Device.Input.Press(x, y, duration)
 }
+
 func (a *ApiImpl) PressE(e Element, duration int) error {
-	tmpl := a.ElementMat[e.Path]
-	imgB, err := a.Device.Screenshot()
-	if err != nil {
+	makeErr := func(err error) error {
 		return fmt.Errorf("failed to press element[%s]: %w", e.Path, err)
 	}
-	img, err := gocv.IMDecode(imgB, gocv.IMReadUnchanged)
+	tmpl := a.ElementMat[e.Path]
+	img, err := a.GetImg()
 	if err != nil {
-		return fmt.Errorf("failed to press element[%s]: %w", e.Path, err)
+		return makeErr(err)
 	}
 	val, point, err := cv.Find(img, tmpl)
 	if err != nil {
-		return fmt.Errorf("failed to press element[%s]: %w", e.Path, err)
+		return makeErr(err)
 	}
 	if val < 0.6 {
 		// TODO 更详细的日志
 		fmt.Printf("maxVal[%f] is too small\n", val)
 	}
 
-	var p = image.Pt(point.X+e.Offset.X, point.Y+e.Offset.Y)
-	err = a.Press(p.X, p.Y, duration)
+	err = a.Press(point.X+e.Offset.X, point.Y+e.Offset.Y, duration)
 	if err != nil {
-		return fmt.Errorf("failed to press element[%s]: %w", e.Path, err)
+		return makeErr(err)
 	}
 	return nil
 }
 
 type SwipeHandler struct {
-	device     devices.Device
-	elementMat map[string]gocv.Mat
-	p1, p2     image.Point
-	e1, e2     Element
+	api    *ApiImpl
+	p1, p2 image.Point
+	e1, e2 Element
 }
 
 func (h *SwipeHandler) To(x, y int) SwipeAction {
@@ -96,10 +99,12 @@ func (h *SwipeHandler) To(x, y int) SwipeAction {
 	h.p2.Y = y
 	return h
 }
+
 func (h *SwipeHandler) ToE(e Element) SwipeAction {
 	h.e2 = e
 	return h
 }
+
 func (h *SwipeHandler) Action(duration int) error {
 	var img *gocv.Mat
 	makeErr := func(err error) error {
@@ -109,17 +114,13 @@ func (h *SwipeHandler) Action(duration int) error {
 
 	find := func(el Element) (image.Point, error) {
 		if img == nil {
-			b, err := h.device.Screenshot()
+			_img, err := h.api.GetImg()
 			if err != nil {
-				return image.ZP, err
-			}
-			_img, err := gocv.IMDecode(b, gocv.IMReadUnchanged)
-			if err != nil {
-				return image.ZP, err
+				return image.ZP, makeErr(err)
 			}
 			img = &_img
 		}
-		tmpl := h.elementMat[el.Path]
+		tmpl := h.api.ElementMat[el.Path]
 		val, point, err := cv.Find(*img, tmpl)
 		if val < 0.6 {
 			// TODO 更详细的日志
@@ -146,23 +147,71 @@ func (h *SwipeHandler) Action(duration int) error {
 		}
 		h.p1 = p
 	}
-	err := h.device.Input.Swipe(h.p1.X, h.p1.Y, h.p2.X, h.p2.Y, duration)
+	err := h.api.Device.Input.Swipe(h.p1.X, h.p1.Y, h.p2.X, h.p2.Y, duration)
 	if err != nil {
 		return makeErr(err)
 	}
 	return nil
 }
+
 func (a *ApiImpl) Swipe(x, y int) SwipeTo {
 	return &SwipeHandler{
-		elementMat: a.ElementMat,
-		device:     a.Device,
-		p1:         image.Point{X: x, Y: y},
+		api: a,
+		p1:  image.Point{X: x, Y: y},
 	}
 }
+
 func (a *ApiImpl) SwipeE(e Element) SwipeTo {
 	return &SwipeHandler{
-		elementMat: a.ElementMat,
-		device:     a.Device,
-		e1:         e,
+		api: a,
+		e1:  e,
 	}
+}
+
+func (a *ApiImpl) FindE(e Element) (image.Point, float32, error) {
+	makeErr := func(err error) error {
+		return fmt.Errorf("failed to find element[%s]: %w", e.Path, err)
+	}
+	tmpl := a.ElementMat[e.Path]
+	img, err := a.GetImg()
+	if err != nil {
+		return image.ZP, 0, makeErr(err)
+	}
+	val, point, err := cv.Find(img, tmpl)
+	if err != nil {
+		return image.ZP, 0, makeErr(err)
+	}
+	return image.Pt(point.X+e.Offset.X, point.Y+e.Offset.Y), val, nil
+}
+func (a *ApiImpl) GetImg() (gocv.Mat, error) {
+	if a.Img != nil {
+		return *a.Img, nil
+	}
+	imgB, err := a.Device.Screenshot()
+	if err != nil {
+		return gocv.NewMat(), err
+	}
+	img, err := gocv.IMDecode(imgB, gocv.IMReadUnchanged)
+	if err != nil {
+		return gocv.NewMat(), err
+	}
+	return img, nil
+}
+func (a *ApiImpl) Lock() error {
+	if a.Img != nil {
+		return errors.New("can not be locked repeatedly")
+	}
+	img, err := a.GetImg()
+	if err != nil {
+		return fmt.Errorf("failed to lock: %w", err)
+	}
+	a.Img = &img
+	return nil
+}
+func (a *ApiImpl) Unlock() error {
+	if a.Img == nil {
+		return errors.New("can not be unlocked repeatedly")
+	}
+	a.Img = nil
+	return nil
 }

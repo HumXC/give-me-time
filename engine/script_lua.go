@@ -133,6 +133,50 @@ func luaFuncSwipe(api Api, storage Storage) lua.Function {
 	}
 }
 
+// find(element) (x, y, maxVal)
+// 查找 element 的位置，这个位置已经加上 Offset 的值
+func luaFuncFind(api Api, storage Storage) lua.Function {
+	return func(l *lua.State) int {
+		if ok, path := isElement(l, 1); ok {
+			e := storage.Element(path)
+			if e.Img == "" {
+				pushErr(l, fmt.Errorf("failed to find element[%s], it`s not a img element", path))
+				return 0
+			}
+			p, v, err := api.FindE(e)
+			if err != nil {
+				pushErr(l, fmt.Errorf("failed to find element[%s]: %w", path, err))
+				return 0
+			}
+			l.PushInteger(p.X)
+			l.PushInteger(p.Y)
+			l.PushNumber(float64(v))
+			return 3
+		}
+		pushErr(l, fmt.Errorf(""))
+		return 0
+	}
+}
+
+func luaFuncLock(api Api) lua.Function {
+	return func(l *lua.State) (rt int) {
+		err := api.Lock()
+		if err != nil {
+			pushErr(l, err)
+		}
+		return
+	}
+}
+func luaFuncUnlock(api Api) lua.Function {
+	return func(l *lua.State) (rt int) {
+		err := api.Unlock()
+		if err != nil {
+			pushErr(l, err)
+		}
+		return
+	}
+}
+
 func pushElement(l *lua.State, name string, es []Element) {
 	if len(es) == 0 {
 		return

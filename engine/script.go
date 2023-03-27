@@ -43,6 +43,9 @@ func (s *script) setFunction(api Api) {
 	s.l.Register("sleep", luaFuncSleep())
 	s.l.Register("press", luaFuncPress(api, s.storage))
 	s.l.Register("swipe", luaFuncSwipe(api, s.storage))
+	s.l.Register("find", luaFuncFind(api, s.storage))
+	s.l.Register("lock", luaFuncLock(api))
+	s.l.Register("unlock", luaFuncUnlock(api))
 }
 
 // 设置在 lua 中的全局 E
