@@ -98,7 +98,7 @@ func VerifyOption(opt *Option) error {
 // - Name 不能为空
 // - 同节点下 Name 不能重复
 // - Name 不能含有字符 '.'
-// TODO: Name 不能包含 '-'
+// - Name 不能包含 '-'
 func VerifyElement(name string, es []Element) error {
 	if len(es) == 0 {
 		return nil
@@ -112,6 +112,9 @@ func VerifyElement(name string, es []Element) error {
 			return fmt.Errorf("element name is empty in [%s]", name)
 		}
 		if strings.Index(e.Name, ".") != -1 {
+			return fmt.Errorf("element name [%s] is invalid in [%s]", e.Name, name)
+		}
+		if strings.Index(e.Name, "-") != -1 {
 			return fmt.Errorf("element name [%s] is invalid in [%s]", e.Name, name)
 		}
 		if _, ok := m[e.Name]; ok {
