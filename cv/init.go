@@ -10,28 +10,37 @@ import (
 var ErrIMEmpty = errors.New("empty image")
 var ErrVTooLow = errors.New("value too low")
 
-func Find(src, target string) (image.Point, error) {
-	imsrc := gocv.IMRead(src, gocv.IMReadColor)
-	if imsrc.Empty() {
-		return image.Point{}, ErrIMEmpty
-	}
-	defer imsrc.Close()
-	imtarget := gocv.IMRead(target, gocv.IMReadColor)
-	if imtarget.Empty() {
-		return image.Point{}, ErrIMEmpty
-	}
-	defer imtarget.Close()
-
+// 使用模板匹配在 img 中匹配 tmpl
+// 第一个返回值是 maxVal，第二个返回值是 maxLoc
+// 如果 tmpl 图像中存在透明度图层，将会使用透明的部分作为遮罩
+func Find(img, tmpl gocv.Mat) (float32, image.Point, error) {
+	grayImg := gocv.NewMat()
+	grayTmpl := gocv.NewMat()
 	result := gocv.NewMat()
-	defer result.Close()
-
 	mask := gocv.NewMat()
-	defer mask.Close()
-	gocv.MatchTemplate(imsrc, imtarget, &result, gocv.TmCcoeffNormed, mask)
+	defer func() {
+		grayImg.Close()
+		grayTmpl.Close()
+		result.Close()
+		mask.Close()
+	}()
 
-	_, max, _, maxLoc := gocv.MinMaxLoc(result)
-	if max < 0.9 {
-		return image.Point{}, ErrVTooLow
+	// 将图像转换为灰度图像
+	gocv.CvtColor(img, &grayImg, gocv.ColorBGRToGray)
+	gocv.CvtColor(tmpl, &grayTmpl, gocv.ColorBGRToGray)
+	// 如果有透明度通道，就将透明部分作为遮罩
+	if tmpl.Channels() == 4 {
+		// 提取alpha通道
+		alpha := gocv.NewMat()
+		gocv.ExtractChannel(tmpl, &alpha, 3)
+		gocv.Threshold(alpha, &mask, 0, 255, gocv.ThresholdBinaryInv)
+		// w := gocv.NewWindow("Input")
+		// w.IMShow(mask)
 	}
-	return maxLoc, nil
+
+	gocv.MatchTemplate(grayImg, grayTmpl, &result, gocv.TmCcoeffNormed, mask)
+
+	_, maxVal, _, maxLoc := gocv.MinMaxLoc(result)
+
+	return maxVal, maxLoc, nil
 }
