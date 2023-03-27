@@ -62,27 +62,10 @@ func LoadScript(file string, option *Option, element []Element, api Api) Script 
 			element: make(map[string]Element),
 		},
 	}
+	FlatElement(s.storage.element, "", element)
 	lua.OpenLibraries(s.l)
-	StoreElement(s.storage.element, "", element)
 	s.setElement(element)
 	s.setFunction(api)
 
 	return s
-}
-
-// 扁平化 Element 存储到 map 中，Element.Element 将被赋值为 nil 不再嵌套
-func StoreElement(m map[string]Element, name string, es []Element) {
-	if len(es) == 0 {
-		return
-	}
-	if name != "" {
-		name += "."
-	}
-	for _, e := range es {
-		subE := e.Element
-		_name := name + e.Name
-		e.Element = nil
-		m[_name] = e
-		StoreElement(m, _name, subE)
-	}
 }

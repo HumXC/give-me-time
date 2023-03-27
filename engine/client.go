@@ -7,10 +7,9 @@ import (
 )
 
 type Client struct {
-	Option  *Option
-	Element []Element
-	Script  Script
-	Device  devices.Device
+	Option *Option
+	Script Script
+	Device devices.Device
 }
 
 func (c *Client) Start() error {
@@ -34,19 +33,16 @@ func LoadProject(project string, device devices.Device) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	scr := LoadScript(path.Join(project, name+".lua"), opt, elm, NewApi(device.Input))
+	api, err := NewApi(device.Input, elm)
+	if err != nil {
+		return nil, err
+	}
+	scr := LoadScript(path.Join(project, name+".lua"), opt, elm, api)
 
 	c := &Client{
-		Option:  opt,
-		Element: elm,
-		Script:  scr,
-		Device:  device,
+		Option: opt,
+		Script: scr,
+		Device: device,
 	}
 	return c, nil
-}
-
-func NewApi(input devices.Input) Api {
-	return &ApiImpl{
-		Input: input,
-	}
 }

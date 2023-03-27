@@ -1,6 +1,12 @@
 package engine
 
-import "github.com/HumXC/give-me-time/devices"
+import (
+	"fmt"
+	"os"
+
+	"github.com/HumXC/give-me-time/devices"
+	"gocv.io/x/gocv"
+)
 
 // “Element” 类型参数是指在 lua 中以 “click(E.main.start)” 的形式调用
 type Api interface {
@@ -21,9 +27,31 @@ type SwipeAction interface {
 	Action(duration int) error
 }
 type ApiImpl struct {
-	Input devices.Input
+	Input   devices.Input
+	Element map[string]Element
+	// ElementMat 是配置了 Src 字段的 Element 对应的 gocv.Mat 实例
+	ElementMat map[string]gocv.Mat
 }
 
+func NewApi(input devices.Input, element []Element) (Api, error) {
+	a := ApiImpl{
+		Input:      input,
+		Element:    make(map[string]Element),
+		ElementMat: make(map[string]gocv.Mat),
+	}
+	FlatElement(a.Element, "", element)
+	for k, e := range a.Element {
+		if e.Src == "" {
+			continue
+		}
+		_, err := os.Stat(e.Src)
+		if err != nil {
+			return nil, fmt.Errorf("can not get element[%s] src[%s] file stat: %w", k, e.Src, err)
+		}
+		a.ElementMat[k] = gocv.IMRead(e.Src, gocv.IMReadUnchanged)
+	}
+	return &a, nil
+}
 func (a *ApiImpl) Press(x, y, duration int) error {
 	return a.Input.Press(x, y, duration)
 }

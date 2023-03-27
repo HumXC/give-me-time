@@ -109,3 +109,20 @@ func VerifyElement(name string, es []Element) error {
 	}
 	return nil
 }
+
+// 扁平化 Element 存储到 map 中，Element.Element 将被赋值为 nil 不再嵌套
+func FlatElement(m map[string]Element, name string, es []Element) {
+	if len(es) == 0 {
+		return
+	}
+	if name != "" {
+		name += "."
+	}
+	for _, e := range es {
+		subE := e.Element
+		_name := name + e.Name
+		e.Element = nil
+		m[_name] = e
+		FlatElement(m, _name, subE)
+	}
+}
