@@ -15,11 +15,11 @@ function assertString(a, b)
     end
 end
 
-assertString(E.main._name, "main")
-assertString(E.main.start._name, "main.start")
-assertString(E.main.text._name, "main.text")
-assertString(E.main.text.input._name, "main.text.input")
-assertString(E.game._name, "game")
+assertString(E.main._path, "main")
+assertString(E.main.start._path, "main.start")
+assertString(E.main.text._path, "main.text")
+assertString(E.main.text.input._path, "main.text.input")
+assertString(E.game._path, "game")
 
 -- 测试全局函数
 -- 调用这个函数说明 fn 必须发生错误

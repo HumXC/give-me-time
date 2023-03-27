@@ -32,13 +32,13 @@ func luaFuncSleep() lua.Function {
 // 按下屏幕上 element 或者坐标(x,y) 持续 duration 毫秒
 func luaFuncPress(api Api, storage Storage) lua.Function {
 	return func(l *lua.State) (rt int) {
-		if name := parseElement(l, 1); name != "" {
+		if ok, path := isElement(l, 1); ok {
 			duration, err := getDuration(l, 2)
 			if err != nil {
 				pushErr(l, err)
 				return
 			}
-			e := storage.Element(name)
+			e := storage.Element(path)
 			err = api.PressE(e, duration)
 			if err != nil {
 				pushErr(l, err)
@@ -97,8 +97,8 @@ func luaFuncSwipe(api Api, storage Storage) lua.Function {
 			l.PushString("to")
 			l.PushGoFunction(func(state *lua.State) (rt int) {
 				rt = 1
-				if name := parseElement(l, 1); name != "" {
-					e := storage.Element(name)
+				if ok, path := isElement(l, 1); ok {
+					e := storage.Element(path)
 					sac := st.ToE(e)
 					setSwipeAction(l, sac)
 					return
@@ -116,8 +116,8 @@ func luaFuncSwipe(api Api, storage Storage) lua.Function {
 			return
 		}
 
-		if name := parseElement(l, 1); name != "" {
-			e := storage.Element(name)
+		if ok, path := isElement(l, 1); ok {
+			e := storage.Element(path)
 			st := api.SwipeE(e)
 			setSwipeTo(l, st)
 			return
@@ -146,12 +146,14 @@ func pushElement(l *lua.State, name string, es []Element) {
 		l.SetTable(-3)
 	}
 	for _, e := range es {
-		_name := name + e.Name
+		path := name + e.Name
 		l.PushString(e.Name)
 		l.NewTable()
 
-		push("_name", _name)
-		pushElement(l, _name, e.Element)
+		push("_path", path)
+		push("_type", "element")
+
+		pushElement(l, path, e.Element)
 
 		l.SetTable(-3)
 	}
@@ -195,15 +197,20 @@ func getXY(l *lua.State, indexX, indexY int) (int, int, error) {
 }
 
 // 用在 lua.Function 中，判段第 index 个参数是不是 Element
-// 如果是，则返回 Element 的 "_name"
-func parseElement(L *lua.State, index int) string {
+// 如果是，则返回 Element 的 "_path"
+func isElement(L *lua.State, index int) (bool, string) {
 	if L.TypeOf(index) != lua.TypeTable {
-		return ""
+		return false, ""
 	}
-	L.Field(index, "_name")
+	L.Field(index, "_type")
+	t, ok := L.ToString(-1)
+	if !ok && t != "element" {
+		return false, ""
+	}
+	L.Field(index, "_path")
 	s, ok := L.ToString(-1)
 	if !ok {
-		return ""
+		return false, ""
 	}
-	return s
+	return true, s
 }

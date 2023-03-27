@@ -15,7 +15,8 @@ type Option struct {
 }
 
 type Element struct {
-	Name        string    `json:"name"`
+	Name        string `json:"name"`
+	Path        string
 	Discription string    `json:"discription"`
 	Src         string    `json:"src"`  // 元素对应的图片
 	Area        Area      `json:"area"` // 元素对应的区域，只有当没有 Src 时才会检查 Area
@@ -111,6 +112,7 @@ func VerifyElement(name string, es []Element) error {
 }
 
 // 扁平化 Element 存储到 map 中，Element.Element 将被赋值为 nil 不再嵌套
+// 并为 Element 的 Path 赋值
 func FlatElement(m map[string]Element, name string, es []Element) {
 	if len(es) == 0 {
 		return
@@ -120,9 +122,10 @@ func FlatElement(m map[string]Element, name string, es []Element) {
 	}
 	for _, e := range es {
 		subE := e.Element
-		_name := name + e.Name
+		path := name + e.Name
 		e.Element = nil
-		m[_name] = e
-		FlatElement(m, _name, subE)
+		e.Path = path
+		m[path] = e
+		FlatElement(m, path, subE)
 	}
 }
