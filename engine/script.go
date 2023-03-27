@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Shopify/go-lua"
 )
@@ -27,7 +28,11 @@ type script struct {
 }
 
 func (s *script) Run() error {
-	return lua.DoFile(s.l, s.file)
+	err := lua.DoFile(s.l, s.file)
+	if err != nil {
+		return fmt.Errorf("script run error: %w", err)
+	}
+	return nil
 }
 
 func (s *script) File() string {
@@ -36,6 +41,15 @@ func (s *script) File() string {
 
 // 设置在 lua 中的全局函数
 func (s *script) setFunction(api Api) {
+	s.l.Register("sleep", func(l *lua.State) (rt int) {
+		duration, err := getDuration(l, 1)
+		if err != nil {
+			pushErr(l, err)
+			return
+		}
+		time.Sleep(time.Duration(duration) * time.Millisecond)
+		return
+	})
 	s.l.Register("press", func(l *lua.State) (rt int) {
 		if name := parseElement(l, 1); name != "" {
 			duration, err := getDuration(l, 2)
@@ -70,11 +84,56 @@ func (s *script) setFunction(api Api) {
 	})
 	s.l.Register("swipe", func(l *lua.State) (rt int) {
 		rt = 1
-		var sh SwipeHandler
+		setSwipeAction := func(l *lua.State, st SwipeAction) (rt int) {
+			rt = 1
+			l.NewTable()
+			l.PushString("action")
+			l.PushGoFunction(func(state *lua.State) (rt int) {
+				rt = 1
+				duration, err := getDuration(l, 1)
+				if err != nil {
+					pushErr(l, err)
+					return
+				}
+				err = st.Action(duration)
+				if err != nil {
+					pushErr(l, err)
+					return
+				}
+				return
+			})
+			l.SetTable(-3)
+			return
+		}
+		setSwipeTo := func(l *lua.State, st SwipeTo) (rt int) {
+			rt = 1
+			l.NewTable()
+			l.PushString("to")
+			l.PushGoFunction(func(state *lua.State) (rt int) {
+				rt = 1
+				if name := parseElement(l, 1); name != "" {
+					e := s.storage.Element(name)
+					sac := st.ToE(e)
+					setSwipeAction(l, sac)
+					return
+				}
+				x, y, err := getXY(l, 1, 2)
+				if err != nil {
+					pushErr(l, err)
+					return
+				}
+				sac := st.To(x, y)
+				setSwipeAction(l, sac)
+				return
+			})
+			l.SetTable(-3)
+			return
+		}
+
 		if name := parseElement(l, 1); name != "" {
 			e := s.storage.Element(name)
-			sh = api.SwipeE(e)
-			s.setSwipeHandler(l, sh)
+			st := api.SwipeE(e)
+			setSwipeTo(l, st)
 			return
 		}
 		x, y, err := getXY(l, 1, 2)
@@ -82,55 +141,11 @@ func (s *script) setFunction(api Api) {
 			pushErr(l, err)
 			return
 		}
-		sh = api.Swipe(x, y)
-		s.setSwipeHandler(l, sh)
+		st := api.Swipe(x, y)
+		setSwipeTo(l, st)
 		return
 	})
 
-}
-
-func (s *script) setSwipeHandler(l *lua.State, sh SwipeHandler) {
-	if sh == nil {
-		return
-	}
-	l.NewTable()
-
-	l.PushString("to")
-	l.PushGoFunction(func(state *lua.State) (rt int) {
-		rt = 1
-		if name := parseElement(l, 1); name != "" {
-			e := s.storage.Element(name)
-			sh.ToE(e)
-			s.setSwipeHandler(l, sh)
-			return
-		}
-		x, y, err := getXY(l, 1, 2)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		sh.To(x, y)
-		s.setSwipeHandler(l, sh)
-		return
-	})
-	l.SetTable(-3)
-
-	l.PushString("action")
-	l.PushGoFunction(func(state *lua.State) (rt int) {
-		rt = 1
-		duration, err := getDuration(l, 1)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		err = sh.Action(duration)
-		if err != nil {
-			pushErr(l, err)
-			return
-		}
-		return
-	})
-	l.SetTable(-3)
 }
 
 // 设置在 lua 中的全局 E
@@ -142,25 +157,7 @@ func (s *script) setElement(es []Element) {
 	pushElement(s.l, "", es)
 }
 
-// “Element” 类型参数是指在 lua 中以 “click(E.main.start)” 的形式调用
-type Api interface {
-	// 按下一个元素或坐标，duration 单位是 ms。duration 为 0 时，将会自动把 duration 赋值为 100
-	Press(x, y, duration int) error
-	PressE(e Element, duration int) error
-	// 滑动
-	Swipe(x, y int) SwipeHandler
-	SwipeE(Element) SwipeHandler
-}
-
-// Api 中的 Swipe 函数返回给 lua 一个 SwipeHandler
-// SwipeHandler 是可以链式调用的
-type SwipeHandler interface {
-	To(x, y int) SwipeHandler
-	ToE(Element) SwipeHandler
-	Action(duration int) error
-}
-
-func LoadScript(file string, option *Option, api Api) Script {
+func LoadScript(file string, option *Option, element []Element, api Api) Script {
 	s := &script{
 		l:    lua.NewState(),
 		file: file,
@@ -169,8 +166,8 @@ func LoadScript(file string, option *Option, api Api) Script {
 		},
 	}
 	lua.OpenLibraries(s.l)
-	StoreElement(s.storage.element, "", option.Element)
-	s.setElement(option.Element)
+	StoreElement(s.storage.element, "", element)
+	s.setElement(element)
 	s.setFunction(api)
 
 	return s

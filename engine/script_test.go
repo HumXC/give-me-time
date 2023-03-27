@@ -12,11 +12,11 @@ type Api struct{}
 
 type SwipeHandler struct{ data string }
 
-func (h *SwipeHandler) To(x, y int) engine.SwipeHandler {
+func (h *SwipeHandler) To(x, y int) engine.SwipeAction {
 	h.data += fmt.Sprintf(" to (%d, %d)", x, y)
 	return h
 }
-func (h *SwipeHandler) ToE(e engine.Element) engine.SwipeHandler {
+func (h *SwipeHandler) ToE(e engine.Element) engine.SwipeAction {
 	h.data += fmt.Sprintf(" to (%s)", e.Discription)
 	return h
 }
@@ -31,14 +31,14 @@ func (a *Api) Press(x, y, d int) error {
 func (a *Api) PressE(e engine.Element, d int) error {
 	return nil
 }
-func (a *Api) Swipe(x, y int) engine.SwipeHandler {
+func (a *Api) Swipe(x, y int) engine.SwipeTo {
 	return &SwipeHandler{
 		data: fmt.Sprintf("from (%d, %d)", x, y),
 	}
 }
-func (a *Api) SwipeE(e engine.Element) engine.SwipeHandler {
+func (a *Api) SwipeE(e engine.Element) engine.SwipeTo {
 	return &SwipeHandler{
-		data: fmt.Sprintf("from (%s)", e.Discription),
+		data: fmt.Sprintf("from (%s)", e.Name),
 	}
 }
 func TestLoadScript(t *testing.T) {
@@ -47,9 +47,14 @@ func TestLoadScript(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	elm, err := engine.LoadElement("test.json")
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	var api engine.Api
 	api = &Api{}
-	s := engine.LoadScript("test.lua", opt, api)
+	s := engine.LoadScript("test.lua", opt, elm, api)
 	err = s.Run()
 
 	if err != nil {

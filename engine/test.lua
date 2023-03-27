@@ -46,10 +46,10 @@ assertError("press", press, E.main.start, -120)
 -- 合法调用
 swipe(1, 2)
 swipe(2, 3).to(1, 3)
-swipe(3, 4).action(0)
 swipe(0, 1).to(2, 1).action(2)
 swipe(E.main).to(E.main.start).action(0)
 -- 非法调用
+assertError("swipe", swipe(3, 4).action, 0) -- 没有第二个点
 assertError("swipe", swipe, "main") -- 参数不合理
 assertError("swipe", swipe, 1) -- 参数个数不对
 sh = swipe(E.main)
