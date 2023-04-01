@@ -7,7 +7,7 @@ import (
 )
 
 func TestLoadElement(t *testing.T) {
-	_, err := config.LoadElement("test.json")
+	_, err := config.LoadElement("element_test.json")
 	if err != nil {
 		t.Error(err)
 	}

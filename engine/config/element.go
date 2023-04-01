@@ -36,27 +36,24 @@ type Area struct {
 // 从 file 加载 json 文件，反序列化成 Element 并验证 Element 的正确性
 // 内部已经调用了 VerifyElement
 func LoadElement(file string) ([]Element, error) {
-	type E struct {
-		Element []Element `json:"element"`
-	}
-	e := E{Element: make([]Element, 0)}
+	e := make([]Element, 0)
 	makeErr := func(err error) error {
 		return fmt.Errorf("failed to load element: %w", err)
 	}
-	esB, err := os.ReadFile(file)
+	eB, err := os.ReadFile(file)
 	if err != nil {
 		return nil, makeErr(err)
 	}
-	err = json.Unmarshal(esB, &e)
+	err = json.Unmarshal(eB, &e)
 	if err != nil {
 		return nil, makeErr(err)
 	}
-	err = VerifyElement("", e.Element)
+	err = VerifyElement("", e)
 	if err != nil {
 		return nil, makeErr(err)
 	}
-	PatchAbsPath(e.Element, path.Dir(file))
-	return e.Element, nil
+	PatchAbsPath(e, path.Dir(file))
+	return e, nil
 }
 
 // 检查 Element 中的内容是否符合要求：

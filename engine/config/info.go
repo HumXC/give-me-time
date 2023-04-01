@@ -12,13 +12,13 @@ type Info struct {
 	Version     string `json:"version"`
 }
 
-// 从 file 加载 json 文件，反序列化成 Option 并验证 Option 的正确性
-// 内部已经调用了 VerifyOption
+// 从 file 加载 json 文件，反序列化成 Info 并验证 Info 的正确性
+// 内部已经调用了 VerifyInfo
 func LoadInfo(file string) (*Info, error) {
 	optB, err := os.ReadFile(file)
 	opt := new(Info)
 	makeErr := func(err error) error {
-		return fmt.Errorf("failed to load option: %w", err)
+		return fmt.Errorf("failed to load info: %w", err)
 	}
 	if err != nil {
 		return nil, makeErr(err)
@@ -27,18 +27,18 @@ func LoadInfo(file string) (*Info, error) {
 	if err != nil {
 		return nil, makeErr(err)
 	}
-	err = VerifyOption(opt)
+	err = VerifyInfo(opt)
 	if err != nil {
 		return nil, makeErr(err)
 	}
 	return opt, nil
 }
 
-// 检查 Option 中的内容是否符合要求：
+// 检查 Info 中的内容是否符合要求：
 // - Name 不能为空
-func VerifyOption(opt *Info) error {
+func VerifyInfo(opt *Info) error {
 	if opt.Name == "" {
-		return fmt.Errorf("field [name] is empty in option")
+		return fmt.Errorf("field [name] is empty in info")
 	}
 	return nil
 }

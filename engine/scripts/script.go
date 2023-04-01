@@ -58,7 +58,7 @@ func (s *script) setElement(es []config.Element) {
 	pushElement(s.l, "", es)
 }
 
-func LoadScript(file string, option *config.Info, element []config.Element, api Api) Script {
+func LoadScript(file string, info *config.Info, element []config.Element, api Api) Script {
 	s := &script{
 		l:    lua.NewState(),
 		file: file,

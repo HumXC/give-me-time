@@ -9,7 +9,7 @@ import (
 )
 
 type Client struct {
-	Option *config.Info
+	Info   *config.Info
 	Script scripts.Script
 	Device devices.Device
 }
@@ -38,7 +38,7 @@ func LoadProject(projectPath string, device devices.Device) (*Client, error) {
 	scr := scripts.LoadScript(path.Join(projectPath, name+".lua"), opt, elm, api)
 
 	c := &Client{
-		Option: opt,
+		Info:   opt,
 		Script: scr,
 		Device: device,
 	}

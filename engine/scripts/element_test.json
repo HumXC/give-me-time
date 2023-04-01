@@ -1,0 +1,13 @@
+[
+    {
+        "name": "main",
+        "element": [
+            { "name": "start" },
+            {
+                "name": "text",
+                "element": [{ "name": "input" }]
+            }
+        ]
+    },
+    { "name": "game" }
+]

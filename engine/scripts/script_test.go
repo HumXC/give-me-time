@@ -53,19 +53,19 @@ func (a *Api) Unlock() error {
 	return nil
 }
 func TestLoadScript(t *testing.T) {
-	opt, err := config.LoadInfo("test.json")
+	opt, err := config.LoadInfo("info_test.json")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	elm, err := config.LoadElement("test.json")
+	elm, err := config.LoadElement("element_test.json")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	var api scripts.Api
 	api = &Api{}
-	s := scripts.LoadScript("test.lua", opt, elm, api)
+	s := scripts.LoadScript("script_test.lua", opt, elm, api)
 	err = s.Run()
 
 	if err != nil {
