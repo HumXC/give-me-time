@@ -1,4 +1,4 @@
-package engine
+package config
 
 import (
 	"encoding/json"
@@ -8,13 +8,6 @@ import (
 	"path"
 	"strings"
 )
-
-type Option struct {
-	Name        string `json:"name"`
-	Discription string `json:"discription"`
-	App         string `json:"app"`
-	Version     string `json:"version"`
-}
 
 // Element 一般用于图像识别
 // 其中 Img, Area, Point 三者起到的作用相同，用于表达一片区域(Img, Area)或者一个点(Point),
@@ -38,28 +31,6 @@ type Area struct {
 	Y1 int `json:"y1"`
 	X2 int `json:"x2"`
 	Y2 int `json:"y2"`
-}
-
-// 从 file 加载 json 文件，反序列化成 Option 并验证 Option 的正确性
-// 内部已经调用了 VerifyOption
-func LoadOption(file string) (*Option, error) {
-	optB, err := os.ReadFile(file)
-	opt := new(Option)
-	makeErr := func(err error) error {
-		return fmt.Errorf("failed to load option: %w", err)
-	}
-	if err != nil {
-		return nil, makeErr(err)
-	}
-	err = json.Unmarshal(optB, opt)
-	if err != nil {
-		return nil, makeErr(err)
-	}
-	err = VerifyOption(opt)
-	if err != nil {
-		return nil, makeErr(err)
-	}
-	return opt, nil
 }
 
 // 从 file 加载 json 文件，反序列化成 Element 并验证 Element 的正确性
@@ -86,18 +57,6 @@ func LoadElement(file string) ([]Element, error) {
 	}
 	PatchAbsPath(e.Element, path.Dir(file))
 	return e.Element, nil
-}
-
-// 检查 Option 中的内容是否符合要求：
-// - Name 不能为空
-func VerifyOption(opt *Option) error {
-	if opt.Name == "" {
-		return fmt.Errorf("field [name] is empty in option")
-	}
-	if opt.App == "" {
-		return fmt.Errorf("field [app] is empty in option")
-	}
-	return nil
 }
 
 // 检查 Element 中的内容是否符合要求：

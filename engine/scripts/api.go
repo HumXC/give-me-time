@@ -1,4 +1,4 @@
-package engine
+package scripts
 
 import (
 	"errors"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/HumXC/give-me-time/cv"
 	"github.com/HumXC/give-me-time/devices"
+	"github.com/HumXC/give-me-time/engine/config"
 	"gocv.io/x/gocv"
 )
 
@@ -15,12 +16,12 @@ import (
 type Api interface {
 	// 按下一个元素或坐标，duration 单位是 ms。duration 为 0 时，将会自动把 duration 赋值为 100
 	Press(x, y, duration int) error
-	PressE(e Element, duration int) error
+	PressE(e config.Element, duration int) error
 	// 滑动
 	Swipe(x, y int) SwipeTo
-	SwipeE(e Element) SwipeTo
+	SwipeE(e config.Element) SwipeTo
 	// 查找元素
-	FindE(e Element) (image.Point, float32, error)
+	FindE(e config.Element) (image.Point, float32, error)
 	// 锁定
 	Lock() error
 	Unlock() error
@@ -29,26 +30,26 @@ type Api interface {
 // Api 中的 Swipe 函数返回给 lua 一个 SwipeTo
 type SwipeTo interface {
 	To(x, y int) SwipeAction
-	ToE(Element) SwipeAction
+	ToE(config.Element) SwipeAction
 }
 type SwipeAction interface {
 	Action(duration int) error
 }
 type ApiImpl struct {
 	Device  devices.Device
-	Element map[string]Element
+	Element map[string]config.Element
 	// ElementMat 是配置了 Src 字段的 Element 对应的 gocv.Mat 实例
 	ElementMat map[string]gocv.Mat
 	Img        *gocv.Mat
 }
 
-func NewApi(device devices.Device, element []Element) (Api, error) {
+func NewApi(device devices.Device, element []config.Element) (Api, error) {
 	a := ApiImpl{
 		Device:     device,
-		Element:    make(map[string]Element),
+		Element:    make(map[string]config.Element),
 		ElementMat: make(map[string]gocv.Mat),
 	}
-	FlatElement(a.Element, "", element)
+	config.FlatElement(a.Element, "", element)
 	for k, e := range a.Element {
 		_, err := os.Stat(e.Img)
 		if err != nil {
@@ -63,7 +64,7 @@ func (a *ApiImpl) Press(x, y, duration int) error {
 	return a.Device.Input.Press(x, y, duration)
 }
 
-func (a *ApiImpl) PressE(e Element, duration int) error {
+func (a *ApiImpl) PressE(e config.Element, duration int) error {
 	makeErr := func(err error) error {
 		return fmt.Errorf("failed to press element[%s]: %w", e.Path, err)
 	}
@@ -91,7 +92,7 @@ func (a *ApiImpl) PressE(e Element, duration int) error {
 type SwipeHandler struct {
 	api    *ApiImpl
 	p1, p2 image.Point
-	e1, e2 Element
+	e1, e2 config.Element
 }
 
 func (h *SwipeHandler) To(x, y int) SwipeAction {
@@ -100,7 +101,7 @@ func (h *SwipeHandler) To(x, y int) SwipeAction {
 	return h
 }
 
-func (h *SwipeHandler) ToE(e Element) SwipeAction {
+func (h *SwipeHandler) ToE(e config.Element) SwipeAction {
 	h.e2 = e
 	return h
 }
@@ -112,7 +113,7 @@ func (h *SwipeHandler) Action(duration int) error {
 		return fmt.Errorf("failed to swipe: %w", err)
 	}
 
-	find := func(el Element) (image.Point, error) {
+	find := func(el config.Element) (image.Point, error) {
 		if img == nil {
 			_img, err := h.api.GetImg()
 			if err != nil {
@@ -161,14 +162,14 @@ func (a *ApiImpl) Swipe(x, y int) SwipeTo {
 	}
 }
 
-func (a *ApiImpl) SwipeE(e Element) SwipeTo {
+func (a *ApiImpl) SwipeE(e config.Element) SwipeTo {
 	return &SwipeHandler{
 		api: a,
 		e1:  e,
 	}
 }
 
-func (a *ApiImpl) FindE(e Element) (image.Point, float32, error) {
+func (a *ApiImpl) FindE(e config.Element) (image.Point, float32, error) {
 	makeErr := func(err error) error {
 		return fmt.Errorf("failed to find element[%s]: %w", e.Path, err)
 	}
@@ -187,7 +188,8 @@ func (a *ApiImpl) GetImg() (gocv.Mat, error) {
 	if a.Img != nil {
 		return *a.Img, nil
 	}
-	imgB, err := a.Device.Screenshot()
+	// TODO
+	imgB, err := a.Device.ADB("shell screencap -p")
 	if err != nil {
 		return gocv.NewMat(), err
 	}

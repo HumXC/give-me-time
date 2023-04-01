@@ -1,11 +1,12 @@
-package engine_test
+package scripts_test
 
 import (
 	"fmt"
 	"image"
 	"testing"
 
-	"github.com/HumXC/give-me-time/engine"
+	"github.com/HumXC/give-me-time/engine/config"
+	"github.com/HumXC/give-me-time/engine/scripts"
 	"github.com/Shopify/go-lua"
 )
 
@@ -13,11 +14,11 @@ type Api struct{}
 
 type SwipeHandler struct{ data string }
 
-func (h *SwipeHandler) To(x, y int) engine.SwipeAction {
+func (h *SwipeHandler) To(x, y int) scripts.SwipeAction {
 	h.data += fmt.Sprintf(" to (%d, %d)", x, y)
 	return h
 }
-func (h *SwipeHandler) ToE(e engine.Element) engine.SwipeAction {
+func (h *SwipeHandler) ToE(e config.Element) scripts.SwipeAction {
 	h.data += fmt.Sprintf(" to (%s)", e.Discription)
 	return h
 }
@@ -29,20 +30,20 @@ func (h *SwipeHandler) Action(duration int) error {
 func (a *Api) Press(x, y, d int) error {
 	return nil
 }
-func (a *Api) PressE(e engine.Element, d int) error {
+func (a *Api) PressE(e config.Element, d int) error {
 	return nil
 }
-func (a *Api) Swipe(x, y int) engine.SwipeTo {
+func (a *Api) Swipe(x, y int) scripts.SwipeTo {
 	return &SwipeHandler{
 		data: fmt.Sprintf("from (%d, %d)", x, y),
 	}
 }
-func (a *Api) SwipeE(e engine.Element) engine.SwipeTo {
+func (a *Api) SwipeE(e config.Element) scripts.SwipeTo {
 	return &SwipeHandler{
 		data: fmt.Sprintf("from (%s)", e.Name),
 	}
 }
-func (a *Api) FindE(e engine.Element) (image.Point, float32, error) {
+func (a *Api) FindE(e config.Element) (image.Point, float32, error) {
 	return image.ZP, 0, nil
 }
 func (a *Api) Lock() error {
@@ -52,19 +53,19 @@ func (a *Api) Unlock() error {
 	return nil
 }
 func TestLoadScript(t *testing.T) {
-	opt, err := engine.LoadOption("test.json")
+	opt, err := config.LoadInfo("test.json")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	elm, err := engine.LoadElement("test.json")
+	elm, err := config.LoadElement("test.json")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	var api engine.Api
+	var api scripts.Api
 	api = &Api{}
-	s := engine.LoadScript("test.lua", opt, elm, api)
+	s := scripts.LoadScript("test.lua", opt, elm, api)
 	err = s.Run()
 
 	if err != nil {

@@ -1,8 +1,9 @@
-package engine
+package scripts
 
 import (
 	"fmt"
 
+	"github.com/HumXC/give-me-time/engine/config"
 	"github.com/Shopify/go-lua"
 )
 
@@ -13,10 +14,10 @@ type Script interface {
 	File() string
 }
 type Storage struct {
-	element map[string]Element
+	element map[string]config.Element
 }
 
-func (s *Storage) Element(key string) Element {
+func (s *Storage) Element(key string) config.Element {
 	return s.element[key]
 }
 
@@ -49,7 +50,7 @@ func (s *script) setFunction(api Api) {
 }
 
 // 设置在 lua 中的全局 E
-func (s *script) setElement(es []Element) {
+func (s *script) setElement(es []config.Element) {
 	s.l.NewTable()
 	defer func() {
 		s.l.SetGlobal("E")
@@ -57,15 +58,15 @@ func (s *script) setElement(es []Element) {
 	pushElement(s.l, "", es)
 }
 
-func LoadScript(file string, option *Option, element []Element, api Api) Script {
+func LoadScript(file string, option *config.Info, element []config.Element, api Api) Script {
 	s := &script{
 		l:    lua.NewState(),
 		file: file,
 		storage: Storage{
-			element: make(map[string]Element),
+			element: make(map[string]config.Element),
 		},
 	}
-	FlatElement(s.storage.element, "", element)
+	config.FlatElement(s.storage.element, "", element)
 	lua.OpenLibraries(s.l)
 	s.setElement(element)
 	s.setFunction(api)

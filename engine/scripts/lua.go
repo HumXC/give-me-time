@@ -1,9 +1,10 @@
-package engine
+package scripts
 
 import (
 	"fmt"
 	"time"
 
+	"github.com/HumXC/give-me-time/engine/config"
 	"github.com/Shopify/go-lua"
 )
 
@@ -177,7 +178,7 @@ func luaFuncUnlock(api Api) lua.Function {
 	}
 }
 
-func pushElement(l *lua.State, name string, es []Element) {
+func pushElement(l *lua.State, name string, es []config.Element) {
 	if len(es) == 0 {
 		return
 	}
