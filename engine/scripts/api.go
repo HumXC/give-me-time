@@ -188,7 +188,6 @@ func (a *ApiImpl) GetImg() (gocv.Mat, error) {
 	if a.Img != nil {
 		return *a.Img, nil
 	}
-	// TODO
 	imgB, err := a.Device.ADB("shell screencap -p")
 	if err != nil {
 		return gocv.NewMat(), err

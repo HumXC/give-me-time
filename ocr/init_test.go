@@ -7,6 +7,7 @@ import (
 )
 
 func TestText(t *testing.T) {
+	// n 被识别成了 N
 	want := "AilLWNNM1.230"
 	text, err := ocr.Text("../test/AilLWnNM1.230.png")
 	if err != nil {

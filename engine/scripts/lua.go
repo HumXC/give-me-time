@@ -159,6 +159,7 @@ func luaFuncFind(api Api, storage Storage) lua.Function {
 	}
 }
 
+// lock()
 func luaFuncLock(api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		err := api.Lock()
@@ -168,6 +169,8 @@ func luaFuncLock(api Api) lua.Function {
 		return
 	}
 }
+
+// unlock()
 func luaFuncUnlock(api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		err := api.Unlock()

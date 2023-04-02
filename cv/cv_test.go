@@ -63,8 +63,8 @@ func TestFind(t *testing.T) {
 		X: 103,
 		Y: 174,
 	}
-	big := gocv.IMRead("../test/big.png", gocv.IMReadUnchanged)
-	small := gocv.IMRead("../test/small.png", gocv.IMReadUnchanged)
+	big := gocv.IMRead("test/big.png", gocv.IMReadUnchanged)
+	small := gocv.IMRead("test/small.png", gocv.IMReadUnchanged)
 	_, p, err := cv.Find(big, small)
 	if err != nil {
 		t.Fatal(err)
