@@ -47,6 +47,7 @@ func (s *script) setFunction(api Api) {
 	s.l.Register("find", luaFuncFind(api, s.storage))
 	s.l.Register("lock", luaFuncLock(api))
 	s.l.Register("unlock", luaFuncUnlock(api))
+	s.l.Register("adb", luaFuncAdb(api))
 }
 
 // 设置在 lua 中的全局 E

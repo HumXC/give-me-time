@@ -55,3 +55,7 @@ assertError("swipe", swipe, 1) -- 参数个数不对
 sh = swipe(E.main)
 assertError("swipe.action", sh.action, E.main.start)
 assertError("swipe.action", sh.action, -1)
+
+-- adb
+adb("ssss")
+assertError("adb", adb, -1)

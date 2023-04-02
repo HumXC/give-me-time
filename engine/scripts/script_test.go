@@ -27,6 +27,9 @@ func (h *SwipeHandler) Action(duration int) error {
 	return nil
 }
 
+func (a *Api) Adb(cmd string) ([]byte, error) {
+	return nil, nil
+}
 func (a *Api) Press(x, y, d int) error {
 	return nil
 }

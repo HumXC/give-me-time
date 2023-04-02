@@ -181,6 +181,27 @@ func luaFuncUnlock(api Api) lua.Function {
 	}
 }
 
+// adb(cmd string) string
+// 执行 adb 命令，adb 命令已经附加了 -s 参数
+// 如果入参是 “shell ls”，实际执行的命令是“adb -s [...] shell ls”
+func luaFuncAdb(api Api) lua.Function {
+	return func(l *lua.State) (rt int) {
+		rt = 1
+		if l.TypeOf(1) != lua.TypeString {
+			pushErr(l, fmt.Errorf("parameter error, [%v] not a string", l.ToValue(1)))
+			return 0
+		}
+		cmd, _ := l.ToString(1)
+		out, err := api.Adb(cmd)
+		if err != nil {
+			pushErr(l, err)
+			return 0
+		}
+		l.PushString(string(out))
+		return
+	}
+}
+
 func pushElement(l *lua.State, name string, es []config.Element) {
 	if len(es) == 0 {
 		return

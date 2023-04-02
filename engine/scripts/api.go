@@ -22,9 +22,11 @@ type Api interface {
 	SwipeE(e config.Element) SwipeTo
 	// 查找元素
 	FindE(e config.Element) (image.Point, float32, error)
-	// 锁定
+	// 锁定与解锁当前 Find 函数的对象
 	Lock() error
 	Unlock() error
+	// 执行 adb 命令
+	Adb(string) ([]byte, error)
 }
 
 // Api 中的 Swipe 函数返回给 lua 一个 SwipeTo
@@ -69,7 +71,7 @@ func (a *ApiImpl) PressE(e config.Element, duration int) error {
 		return fmt.Errorf("failed to press element[%s]: %w", e.Path, err)
 	}
 	tmpl := a.ElementMat[e.Path]
-	img, err := a.GetImg()
+	img, err := a.Screencap()
 	if err != nil {
 		return makeErr(err)
 	}
@@ -115,7 +117,7 @@ func (h *SwipeHandler) Action(duration int) error {
 
 	find := func(el config.Element) (image.Point, error) {
 		if img == nil {
-			_img, err := h.api.GetImg()
+			_img, err := h.api.Screencap()
 			if err != nil {
 				return image.ZP, makeErr(err)
 			}
@@ -174,7 +176,7 @@ func (a *ApiImpl) FindE(e config.Element) (image.Point, float32, error) {
 		return fmt.Errorf("failed to find element[%s]: %w", e.Path, err)
 	}
 	tmpl := a.ElementMat[e.Path]
-	img, err := a.GetImg()
+	img, err := a.Screencap()
 	if err != nil {
 		return image.ZP, 0, makeErr(err)
 	}
@@ -184,7 +186,8 @@ func (a *ApiImpl) FindE(e config.Element) (image.Point, float32, error) {
 	}
 	return image.Pt(point.X+e.Offset.X, point.Y+e.Offset.Y), val, nil
 }
-func (a *ApiImpl) GetImg() (gocv.Mat, error) {
+
+func (a *ApiImpl) Screencap() (gocv.Mat, error) {
 	if a.Img != nil {
 		return *a.Img, nil
 	}
@@ -198,21 +201,31 @@ func (a *ApiImpl) GetImg() (gocv.Mat, error) {
 	}
 	return img, nil
 }
+
 func (a *ApiImpl) Lock() error {
 	if a.Img != nil {
 		return errors.New("can not be locked repeatedly")
 	}
-	img, err := a.GetImg()
+	img, err := a.Screencap()
 	if err != nil {
 		return fmt.Errorf("failed to lock: %w", err)
 	}
 	a.Img = &img
 	return nil
 }
+
 func (a *ApiImpl) Unlock() error {
 	if a.Img == nil {
 		return errors.New("can not be unlocked repeatedly")
 	}
 	a.Img = nil
 	return nil
+}
+
+func (a *ApiImpl) Adb(cmd string) ([]byte, error) {
+	out, err := a.Device.ADB(cmd)
+	if err != nil {
+		return nil, fmt.Errorf("adb error: %w", err)
+	}
+	return out, nil
 }
