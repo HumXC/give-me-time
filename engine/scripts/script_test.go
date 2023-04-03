@@ -55,6 +55,12 @@ func (a *Api) Lock() error {
 func (a *Api) Unlock() error {
 	return nil
 }
+func (a *Api) Ocr(int, int, int, int) (string, error) {
+	return "", nil
+}
+func (a *Api) OcrE(config.Element) (string, error) {
+	return "", nil
+}
 func TestLoadScript(t *testing.T) {
 	opt, err := config.LoadInfo("info_test.json")
 	if err != nil {

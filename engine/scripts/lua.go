@@ -135,7 +135,6 @@ func luaFuncSwipe(api Api, storage Storage) lua.Function {
 }
 
 // find(element) (x, y, maxVal)
-// 查找 element 的位置，这个位置已经加上 Offset 的值
 func luaFuncFind(api Api, storage Storage) lua.Function {
 	return func(l *lua.State) int {
 		if ok, path := isElement(l, 1); ok {
@@ -154,7 +153,7 @@ func luaFuncFind(api Api, storage Storage) lua.Function {
 			l.PushNumber(float64(v))
 			return 3
 		}
-		pushErr(l, fmt.Errorf(""))
+		pushErr(l, fmt.Errorf("must be an element"))
 		return 0
 	}
 }
@@ -198,6 +197,31 @@ func luaFuncAdb(api Api) lua.Function {
 			return 0
 		}
 		l.PushString(string(out))
+		return
+	}
+}
+
+// ocr(x1, y1, x2, y2) string
+// 返回范围内的文字识别结果
+func luaFuncOcr(api Api) lua.Function {
+	return func(l *lua.State) (rt int) {
+		rt = 1
+		x, y, err := getXY(l, 1, 2)
+		if err != nil {
+			pushErr(l, err)
+			return 0
+		}
+		x2, y2, err := getXY(l, 1, 2)
+		if err != nil {
+			pushErr(l, err)
+			return 0
+		}
+		text, err := api.Ocr(x, y, x2, y2)
+		if err != nil {
+			pushErr(l, err)
+			return 0
+		}
+		l.PushString(text)
 		return
 	}
 }

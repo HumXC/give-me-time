@@ -1,14 +1,18 @@
 package scripts
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"os"
+	"sync"
 
 	"github.com/HumXC/give-me-time/cv"
 	"github.com/HumXC/give-me-time/devices"
 	"github.com/HumXC/give-me-time/engine/config"
+	"github.com/otiai10/gosseract/v2"
 	"gocv.io/x/gocv"
 )
 
@@ -27,6 +31,7 @@ type Api interface {
 	Unlock() error
 	// 执行 adb 命令
 	Adb(string) ([]byte, error)
+	Ocr(x1, y1, x2, y2 int) (string, error)
 }
 
 // Api 中的 Swipe 函数返回给 lua 一个 SwipeTo
@@ -43,6 +48,8 @@ type ApiImpl struct {
 	// ElementMat 是配置了 Src 字段的 Element 对应的 gocv.Mat 实例
 	ElementMat map[string]gocv.Mat
 	Img        *gocv.Mat
+	Sseract    *gosseract.Client
+	sseractMu  *sync.Mutex
 }
 
 func NewApi(device devices.Device, element []config.Element) (Api, error) {
@@ -71,7 +78,7 @@ func (a *ApiImpl) PressE(e config.Element, duration int) error {
 		return fmt.Errorf("failed to press element[%s]: %w", e.Path, err)
 	}
 	tmpl := a.ElementMat[e.Path]
-	img, err := a.Screencap()
+	img, err := a.ScreencapToMat()
 	if err != nil {
 		return makeErr(err)
 	}
@@ -117,7 +124,7 @@ func (h *SwipeHandler) Action(duration int) error {
 
 	find := func(el config.Element) (image.Point, error) {
 		if img == nil {
-			_img, err := h.api.Screencap()
+			_img, err := h.api.ScreencapToMat()
 			if err != nil {
 				return image.ZP, makeErr(err)
 			}
@@ -175,8 +182,11 @@ func (a *ApiImpl) FindE(e config.Element) (image.Point, float32, error) {
 	makeErr := func(err error) error {
 		return fmt.Errorf("failed to find element[%s]: %w", e.Path, err)
 	}
+	if e.Img == "" {
+		return image.ZP, 0, makeErr(errors.New("must be an \"Img\" field"))
+	}
 	tmpl := a.ElementMat[e.Path]
-	img, err := a.Screencap()
+	img, err := a.ScreencapToMat()
 	if err != nil {
 		return image.ZP, 0, makeErr(err)
 	}
@@ -184,14 +194,22 @@ func (a *ApiImpl) FindE(e config.Element) (image.Point, float32, error) {
 	if err != nil {
 		return image.ZP, 0, makeErr(err)
 	}
-	return image.Pt(point.X+e.Offset.X, point.Y+e.Offset.Y), val, nil
+	return point, val, nil
 }
 
-func (a *ApiImpl) Screencap() (gocv.Mat, error) {
+func (a *ApiImpl) Screencap() ([]byte, error) {
+	imgB, err := a.Device.ADB("shell screencap -p")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get screencap: %w", err)
+	}
+	return imgB, nil
+}
+
+func (a *ApiImpl) ScreencapToMat() (gocv.Mat, error) {
 	if a.Img != nil {
 		return *a.Img, nil
 	}
-	imgB, err := a.Device.ADB("shell screencap -p")
+	imgB, err := a.Screencap()
 	if err != nil {
 		return gocv.NewMat(), err
 	}
@@ -206,7 +224,7 @@ func (a *ApiImpl) Lock() error {
 	if a.Img != nil {
 		return errors.New("can not be locked repeatedly")
 	}
-	img, err := a.Screencap()
+	img, err := a.ScreencapToMat()
 	if err != nil {
 		return fmt.Errorf("failed to lock: %w", err)
 	}
@@ -226,6 +244,39 @@ func (a *ApiImpl) Adb(cmd string) ([]byte, error) {
 	out, err := a.Device.ADB(cmd)
 	if err != nil {
 		return nil, fmt.Errorf("adb error: %w", err)
+	}
+	return out, nil
+}
+
+func (a *ApiImpl) Ocr(x1, y1, x2, y2 int) (string, error) {
+	r := image.Rect(x1, y1, x2, y2)
+	makeErr := func(err error) error {
+		return fmt.Errorf("ocr error: %w", err)
+	}
+	imgB, err := a.Screencap()
+	if err != nil {
+		return "", makeErr(err)
+	}
+	buf := bytes.NewBuffer(imgB)
+	img, _, err := image.Decode(buf)
+	if err != nil {
+		return "", makeErr(err)
+	}
+	subImg := img.(*image.YCbCr).SubImage(r)
+	buf.Reset()
+	err = jpeg.Encode(buf, subImg, &jpeg.Options{Quality: 100})
+	if err != nil {
+		return "", makeErr(err)
+	}
+	a.sseractMu.Lock()
+	defer a.sseractMu.Unlock()
+	err = a.Sseract.SetImageFromBytes(buf.Bytes())
+	if err != nil {
+		return "", makeErr(err)
+	}
+	out, err := a.Sseract.Text()
+	if err != nil {
+		return "", makeErr(err)
 	}
 	return out, nil
 }

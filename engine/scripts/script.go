@@ -48,6 +48,7 @@ func (s *script) setFunction(api Api) {
 	s.l.Register("lock", luaFuncLock(api))
 	s.l.Register("unlock", luaFuncUnlock(api))
 	s.l.Register("adb", luaFuncAdb(api))
+	s.l.Register("ocr", luaFuncOcr(api))
 }
 
 // 设置在 lua 中的全局 E
