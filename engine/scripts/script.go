@@ -2,9 +2,11 @@ package scripts
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/HumXC/give-me-time/engine/config"
 	"github.com/Shopify/go-lua"
+	"golang.org/x/exp/slog"
 )
 
 type Script interface {
@@ -41,14 +43,16 @@ func (s *script) File() string {
 
 // 设置在 lua 中的全局函数
 func (s *script) setFunction(api Api) {
-	s.l.Register("sleep", luaFuncSleep())
-	s.l.Register("press", luaFuncPress(api, s.storage))
-	s.l.Register("swipe", luaFuncSwipe(api, s.storage))
-	s.l.Register("find", luaFuncFind(api, s.storage))
-	s.l.Register("lock", luaFuncLock(api))
-	s.l.Register("unlock", luaFuncUnlock(api))
-	s.l.Register("adb", luaFuncAdb(api))
-	s.l.Register("ocr", luaFuncOcr(api))
+	// TODO: 完善日志格式
+	log := slog.New(slog.NewTextHandler(os.Stdout))
+	s.l.Register("sleep", luaFuncSleep(log))
+	s.l.Register("press", luaFuncPress(log, api, s.storage))
+	s.l.Register("swipe", luaFuncSwipe(log, api, s.storage))
+	s.l.Register("find", luaFuncFind(log, api, s.storage))
+	s.l.Register("lock", luaFuncLock(log, api))
+	s.l.Register("unlock", luaFuncUnlock(log, api))
+	s.l.Register("adb", luaFuncAdb(log, api))
+	s.l.Register("ocr", luaFuncOcr(log, api))
 }
 
 // 设置在 lua 中的全局 E

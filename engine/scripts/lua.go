@@ -6,6 +6,7 @@ import (
 
 	"github.com/HumXC/give-me-time/engine/config"
 	"github.com/Shopify/go-lua"
+	"golang.org/x/exp/slog"
 )
 
 // 此文件用于定义在 lua 中使用的函数，连接 api.go 中定义的函数。
@@ -20,58 +21,61 @@ import (
 // 当第一和第二参数为坐标 x 和 y 时，第三个参数为 duration
 
 // sleep(duration) 暂停 duration 毫秒
-func luaFuncSleep() lua.Function {
+func luaFuncSleep(log *slog.Logger) lua.Function {
 	return func(l *lua.State) (rt int) {
 		duration, err := getDuration(l, 1)
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 			return
 		}
 		time.Sleep(time.Duration(duration) * time.Millisecond)
+		log.Info("sleep", duration, "millisecond")
 		return
 	}
 }
 
 // press(element|x, duration|y, duration)
 // 按下屏幕上 element 或者坐标(x,y) 持续 duration 毫秒
-func luaFuncPress(api Api, storage Storage) lua.Function {
+func luaFuncPress(log *slog.Logger, api Api, storage Storage) lua.Function {
 	return func(l *lua.State) (rt int) {
 		if ok, path := isElement(l, 1); ok {
 			duration, err := getDuration(l, 2)
 			if err != nil {
-				pushErr(l, err)
+				pushErr(log, l, err)
 				return
 			}
 			e := storage.Element(path)
 			err = api.PressE(e, duration)
 			if err != nil {
-				pushErr(l, err)
+				pushErr(log, l, err)
 				return
 			}
+			log.Info(fmt.Sprintf("press element [%s] %d millisecond", e.Name, duration))
 			return
 		}
 		duration, err := getDuration(l, 3)
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 			return
 		}
 		x, y, err := getXY(l, 1, 2)
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 			return
 		}
 		err = api.Press(x, y, duration)
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 			return
 		}
+		log.Info(fmt.Sprintf("press (%d, %d) %d millisecond", x, y, duration))
 		return
 	}
 }
 
 // swipe(element|x, |y).to(element|x, |y).action(duration)
 // 在 duration 毫秒内从 swipe 传入的点滑动到 to 传入的点
-func luaFuncSwipe(api Api, storage Storage) lua.Function {
+func luaFuncSwipe(log *slog.Logger, api Api, storage Storage) lua.Function {
 	return func(l *lua.State) (rt int) {
 		rt = 1
 		setSwipeAction := func(l *lua.State, st SwipeAction) (rt int) {
@@ -82,14 +86,17 @@ func luaFuncSwipe(api Api, storage Storage) lua.Function {
 				rt = 1
 				duration, err := getDuration(l, 1)
 				if err != nil {
-					pushErr(l, err)
+					pushErr(log, l, err)
 					return
 				}
-				err = st.Action(duration)
+				p1, p2, err := st.Action(duration)
 				if err != nil {
-					pushErr(l, err)
+					pushErr(log, l, err)
 					return
 				}
+				log.Info(fmt.Sprintf(
+					"swipe (%d, %d) to (%d, %d) use %d millisecond",
+					p1.X, p1.Y, p2.X, p2.Y, duration))
 				return
 			})
 			l.SetTable(-3)
@@ -109,7 +116,7 @@ func luaFuncSwipe(api Api, storage Storage) lua.Function {
 				}
 				x, y, err := getXY(l, 1, 2)
 				if err != nil {
-					pushErr(l, err)
+					pushErr(log, l, err)
 					return
 				}
 				sac := st.To(x, y)
@@ -128,7 +135,7 @@ func luaFuncSwipe(api Api, storage Storage) lua.Function {
 		}
 		x, y, err := getXY(l, 1, 2)
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 			return
 		}
 		st := api.Swipe(x, y)
@@ -138,47 +145,51 @@ func luaFuncSwipe(api Api, storage Storage) lua.Function {
 }
 
 // find(element) (x, y, maxVal)
-func luaFuncFind(api Api, storage Storage) lua.Function {
+func luaFuncFind(log *slog.Logger, api Api, storage Storage) lua.Function {
 	return func(l *lua.State) int {
 		if ok, path := isElement(l, 1); ok {
 			e := storage.Element(path)
 			if e.Img == "" {
-				pushErr(l, fmt.Errorf("element [%s] does not exist", path))
+				pushErr(log, l, fmt.Errorf("element [%s] does not exist", path))
 				return 0
 			}
 			p, v, err := api.FindE(e)
 			if err != nil {
-				pushErr(l, fmt.Errorf("element [%s] not found: %w", path, err))
+				pushErr(log, l, fmt.Errorf("element [%s] not found: %w", path, err))
 				return 0
 			}
+			log.Info(fmt.Sprintf(
+				"find element [%s] on (%d, %d), val: %f", e.Name, p.X, p.Y, v))
 			l.PushInteger(p.X)
 			l.PushInteger(p.Y)
 			l.PushNumber(float64(v))
 			return 3
 		}
-		pushErr(l, fmt.Errorf("must be an element"))
+		pushErr(log, l, fmt.Errorf("must be an element"))
 		return 0
 	}
 }
 
 // lock()
-func luaFuncLock(api Api) lua.Function {
+func luaFuncLock(log *slog.Logger, api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		err := api.Lock()
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 		}
+		log.Info("lock")
 		return
 	}
 }
 
 // unlock()
-func luaFuncUnlock(api Api) lua.Function {
+func luaFuncUnlock(log *slog.Logger, api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		err := api.Unlock()
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 		}
+		log.Info("lock")
 		return
 	}
 }
@@ -186,19 +197,20 @@ func luaFuncUnlock(api Api) lua.Function {
 // adb(cmd string) string
 // 执行 adb 命令，adb 命令已经附加了 -s 参数
 // 如果入参是 “shell ls”，实际执行的命令是“adb -s [...] shell ls”
-func luaFuncAdb(api Api) lua.Function {
+func luaFuncAdb(log *slog.Logger, api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		rt = 1
 		if l.TypeOf(1) != lua.TypeString {
-			pushErr(l, fmt.Errorf("the parameter [%v] is not a string", l.ToValue(1)))
+			pushErr(log, l, fmt.Errorf("the parameter [%v] is not a string", l.ToValue(1)))
 			return 0
 		}
 		cmd, _ := l.ToString(1)
 		out, err := api.Adb(cmd)
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, fmt.Errorf("adb error: %w", err))
 			return 0
 		}
+		log.Info("run adb: [" + cmd + "]")
 		l.PushString(string(out))
 		return
 	}
@@ -206,24 +218,25 @@ func luaFuncAdb(api Api) lua.Function {
 
 // ocr(x1, y1, x2, y2) string
 // 返回范围内的文字识别结果
-func luaFuncOcr(api Api) lua.Function {
+func luaFuncOcr(log *slog.Logger, api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		rt = 1
 		x, y, err := getXY(l, 1, 2)
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 			return 0
 		}
 		x2, y2, err := getXY(l, 3, 4)
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 			return 0
 		}
 		text, err := api.Ocr(x, y, x2, y2)
 		if err != nil {
-			pushErr(l, err)
+			pushErr(log, l, err)
 			return 0
 		}
+		log.Info(fmt.Sprintf("ocr (%d, %d)-(%d, %d): %s", x, y, x2, y2, text))
 		l.PushString(text)
 		return
 	}
@@ -255,9 +268,10 @@ func pushElement(l *lua.State, name string, es []config.Element) {
 	}
 }
 
-func pushErr(l *lua.State, err error) {
-	lua.Errorf(l,
-		"lua bound function call error: "+err.Error())
+func pushErr(log *slog.Logger, l *lua.State, err error) {
+	msg := "lua bound function call error: " + err.Error()
+	log.Error(msg)
+	lua.Errorf(l, msg)
 }
 
 // 从第 index 个参数中获取 duration，其中 duration 是一个正整数，如果参数不符合则返回 error。
@@ -279,6 +293,7 @@ func getDuration(l *lua.State, index int) (int, error) {
 	return d, nil
 }
 
+// 获取两个整数作为“坐标”使用
 func getXY(l *lua.State, indexX, indexY int) (int, int, error) {
 	x, ok := l.ToInteger(indexX)
 	if !ok {

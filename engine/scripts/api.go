@@ -40,7 +40,7 @@ type SwipeTo interface {
 	ToE(config.Element) SwipeAction
 }
 type SwipeAction interface {
-	Action(duration int) error
+	Action(duration int) (image.Point, image.Point, error)
 }
 type ApiImpl struct {
 	Device  devices.Device
@@ -117,7 +117,7 @@ func (h *SwipeHandler) ToE(e config.Element) SwipeAction {
 	return h
 }
 
-func (h *SwipeHandler) Action(duration int) error {
+func (h *SwipeHandler) Action(duration int) (image.Point, image.Point, error) {
 	var img *gocv.Mat
 	makeErr := func(err error) error {
 		// TODO 更详细的错误
@@ -148,22 +148,22 @@ func (h *SwipeHandler) Action(duration int) error {
 	if h.e1.Name != "" {
 		p, err := find(h.e1)
 		if err != nil {
-			return makeErr(err)
+			return image.ZP, image.ZP, makeErr(err)
 		}
 		h.p1 = p
 	}
 	if h.e2.Name != "" {
 		p, err := find(h.e2)
 		if err != nil {
-			return makeErr(err)
+			return image.ZP, image.ZP, makeErr(err)
 		}
 		h.p1 = p
 	}
 	err := h.api.Device.Input.Swipe(h.p1.X, h.p1.Y, h.p2.X, h.p2.Y, duration)
 	if err != nil {
-		return makeErr(err)
+		return image.ZP, image.ZP, makeErr(err)
 	}
-	return nil
+	return h.p1, h.p2, nil
 }
 
 func (a *ApiImpl) Swipe(x, y int) SwipeTo {

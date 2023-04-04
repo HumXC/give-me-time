@@ -10,4 +10,5 @@ require (
 require (
 	github.com/HumXC/adb-helper v0.0.0-20230325074621-c6c932d7c17e
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
+	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 )
