@@ -20,7 +20,7 @@ import (
 type Api interface {
 	// 按下一个元素或坐标，duration 单位是 ms。duration 为 0 时，将会自动把 duration 赋值为 100
 	Press(x, y, duration int) error
-	PressE(e config.Element, duration int) error
+	PressE(e config.Element, duration int) (bool, error)
 	// 滑动
 	Swipe(x, y int) SwipeTo
 	SwipeE(e config.Element) SwipeTo
@@ -40,7 +40,8 @@ type SwipeTo interface {
 	ToE(config.Element) SwipeAction
 }
 type SwipeAction interface {
-	Action(duration int) (image.Point, image.Point, error)
+	// 第一个返回值是开始滑动的点，第二个返回值是滑动结束的点，第三个返回值表示是否成功
+	Action(duration int) (image.Point, image.Point, bool, error)
 }
 type ApiImpl struct {
 	Device  devices.Device
@@ -75,29 +76,22 @@ func (a *ApiImpl) Press(x, y, duration int) error {
 	return a.Device.Input.Press(x, y, duration)
 }
 
-func (a *ApiImpl) PressE(e config.Element, duration int) error {
+func (a *ApiImpl) PressE(e config.Element, duration int) (bool, error) {
 	makeErr := func(err error) error {
 		return fmt.Errorf("failed to press element[%s]: %w", e.Path, err)
 	}
-	tmpl := a.ElementMat[e.Path]
-	img, err := a.ScreencapToMat()
+	p, val, err := a.FindE(e)
 	if err != nil {
-		return makeErr(err)
+		return false, makeErr(err)
 	}
-	val, point, err := cv.Find(img, tmpl)
+	if val < e.Threshold {
+		return false, nil
+	}
+	err = a.Press(p.X+e.Offset.X, p.Y+e.Offset.Y, duration)
 	if err != nil {
-		return makeErr(err)
+		return false, makeErr(err)
 	}
-	if val < 0.6 {
-		// TODO 更详细的日志
-		fmt.Printf("maxVal[%f] is too small\n", val)
-	}
-
-	err = a.Press(point.X+e.Offset.X, point.Y+e.Offset.Y, duration)
-	if err != nil {
-		return makeErr(err)
-	}
-	return nil
+	return true, nil
 }
 
 type SwipeHandler struct {
@@ -117,53 +111,32 @@ func (h *SwipeHandler) ToE(e config.Element) SwipeAction {
 	return h
 }
 
-func (h *SwipeHandler) Action(duration int) (image.Point, image.Point, error) {
-	var img *gocv.Mat
-	makeErr := func(err error) error {
-		// TODO 更详细的错误
-		return fmt.Errorf("failed to swipe: %w", err)
-	}
-
-	find := func(el config.Element) (image.Point, error) {
-		if img == nil {
-			_img, err := h.api.ScreencapToMat()
-			if err != nil {
-				return image.ZP, makeErr(err)
-			}
-			img = &_img
-		}
-		tmpl := h.api.ElementMat[el.Path]
-		val, point, err := cv.Find(*img, tmpl)
-		if val < 0.6 {
-			// TODO 更详细的日志
-			fmt.Printf("maxVal[%f] is too small\n", val)
-		}
-		if err != nil {
-			return point, err
-		}
-		point.X += el.Offset.X
-		point.Y += el.Offset.Y
-		return point, nil
-	}
+func (h *SwipeHandler) Action(duration int) (image.Point, image.Point, bool, error) {
 	if h.e1.Name != "" {
-		p, err := find(h.e1)
+		p, val, err := h.api.FindE(h.e1)
 		if err != nil {
-			return image.ZP, image.ZP, makeErr(err)
+			return image.ZP, image.ZP, false, err
+		}
+		if val < h.e1.Threshold {
+			return image.ZP, image.ZP, false, nil
 		}
 		h.p1 = p
 	}
 	if h.e2.Name != "" {
-		p, err := find(h.e2)
+		p, val, err := h.api.FindE(h.e2)
 		if err != nil {
-			return image.ZP, image.ZP, makeErr(err)
+			return image.ZP, image.ZP, false, err
 		}
-		h.p1 = p
+		if val < h.e1.Threshold {
+			return image.ZP, image.ZP, false, nil
+		}
+		h.p2 = p
 	}
 	err := h.api.Device.Input.Swipe(h.p1.X, h.p1.Y, h.p2.X, h.p2.Y, duration)
 	if err != nil {
-		return image.ZP, image.ZP, makeErr(err)
+		return image.ZP, image.ZP, false, err
 	}
-	return h.p1, h.p2, nil
+	return h.p1, h.p2, true, nil
 }
 
 func (a *ApiImpl) Swipe(x, y int) SwipeTo {

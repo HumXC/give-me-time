@@ -22,9 +22,9 @@ func (h *SwipeHandler) ToE(e config.Element) scripts.SwipeAction {
 	h.data += fmt.Sprintf(" to (%s)", e.Discription)
 	return h
 }
-func (h *SwipeHandler) Action(duration int) (image.Point, image.Point, error) {
+func (h *SwipeHandler) Action(duration int) (image.Point, image.Point, bool, error) {
 	h.data += fmt.Sprintf(" use %d ms.", duration)
-	return image.ZP, image.ZP, nil
+	return image.ZP, image.ZP, true, nil
 }
 
 func (a *Api) Adb(cmd string) ([]byte, error) {
@@ -33,8 +33,8 @@ func (a *Api) Adb(cmd string) ([]byte, error) {
 func (a *Api) Press(x, y, d int) error {
 	return nil
 }
-func (a *Api) PressE(e config.Element, d int) error {
-	return nil
+func (a *Api) PressE(e config.Element, d int) (bool, error) {
+	return true, nil
 }
 func (a *Api) Swipe(x, y int) scripts.SwipeTo {
 	return &SwipeHandler{

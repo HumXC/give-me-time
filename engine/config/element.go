@@ -23,6 +23,7 @@ type Element struct {
 	Point       image.Point `json:"point"`
 	Element     []Element   `json:"element"`
 	Offset      image.Point `json:"offset"` // 该元素在 Img 或 Area 上的偏移位置
+	Threshold   float32     `json:"threshold"`
 }
 
 // 从左上角的点坐标到右下角的点坐标

@@ -34,42 +34,50 @@ func luaFuncSleep(log *slog.Logger) lua.Function {
 	}
 }
 
-// press(element|x, duration|y, duration)
+// press(element|x, duration|y, duration) ok
 // 按下屏幕上 element 或者坐标(x,y) 持续 duration 毫秒
 func luaFuncPress(log *slog.Logger, api Api, storage Storage) lua.Function {
-	return func(l *lua.State) (rt int) {
+	return func(l *lua.State) int {
 		if ok, path := isElement(l, 1); ok {
 			duration, err := getDuration(l, 2)
 			if err != nil {
 				pushErr(log, l, err)
-				return
+				return 0
 			}
 			e := storage.Element(path)
-			err = api.PressE(e, duration)
+			ok, err = api.PressE(e, duration)
 			if err != nil {
 				pushErr(log, l, err)
-				return
+				return 0
+			}
+			if !ok {
+				log.Info(fmt.Sprintf("failed to press element [%s] use %d millisecond, [maxVal] is smaller than [threshold:%f]",
+					e.Name, duration, e.Threshold))
+				l.PushBoolean(ok)
+				return 1
 			}
 			log.Info(fmt.Sprintf("press element [%s] %d millisecond", e.Name, duration))
-			return
+			l.PushBoolean(ok)
+			return 1
 		}
 		duration, err := getDuration(l, 3)
 		if err != nil {
 			pushErr(log, l, err)
-			return
+			return 0
 		}
 		x, y, err := getXY(l, 1, 2)
 		if err != nil {
 			pushErr(log, l, err)
-			return
+			return 0
 		}
 		err = api.Press(x, y, duration)
 		if err != nil {
 			pushErr(log, l, err)
-			return
+			return 0
 		}
 		log.Info(fmt.Sprintf("press (%d, %d) %d millisecond", x, y, duration))
-		return
+		l.PushBoolean(true)
+		return 1
 	}
 }
 
@@ -78,53 +86,57 @@ func luaFuncPress(log *slog.Logger, api Api, storage Storage) lua.Function {
 func luaFuncSwipe(log *slog.Logger, api Api, storage Storage) lua.Function {
 	return func(l *lua.State) (rt int) {
 		rt = 1
-		setSwipeAction := func(l *lua.State, st SwipeAction) (rt int) {
-			rt = 1
+		setSwipeAction := func(l *lua.State, st SwipeAction) int {
 			l.NewTable()
 			l.PushString("action")
-			l.PushGoFunction(func(state *lua.State) (rt int) {
-				rt = 1
+			l.PushGoFunction(func(state *lua.State) int {
 				duration, err := getDuration(l, 1)
 				if err != nil {
 					pushErr(log, l, err)
-					return
+					return 0
 				}
-				p1, p2, err := st.Action(duration)
+				p1, p2, ok, err := st.Action(duration)
 				if err != nil {
 					pushErr(log, l, err)
-					return
+					return 0
+				}
+				if !ok {
+					log.Info(fmt.Sprintf(
+						"failed to swipe (%d, %d) to (%d, %d) use %d millisecond, there are some points that do not reach the threshold",
+						p1.X, p1.Y, p2.X, p2.Y, duration))
+					l.PushBoolean(false)
+					return 1
 				}
 				log.Info(fmt.Sprintf(
 					"swipe (%d, %d) to (%d, %d) use %d millisecond",
 					p1.X, p1.Y, p2.X, p2.Y, duration))
-				return
+				l.PushBoolean(true)
+				return 1
 			})
 			l.SetTable(-3)
-			return
+			return 1
 		}
-		setSwipeTo := func(l *lua.State, st SwipeTo) (rt int) {
-			rt = 1
+		setSwipeTo := func(l *lua.State, st SwipeTo) int {
 			l.NewTable()
 			l.PushString("to")
-			l.PushGoFunction(func(state *lua.State) (rt int) {
-				rt = 1
+			l.PushGoFunction(func(state *lua.State) int {
 				if ok, path := isElement(l, 1); ok {
 					e := storage.Element(path)
 					sac := st.ToE(e)
 					setSwipeAction(l, sac)
-					return
+					return 1
 				}
 				x, y, err := getXY(l, 1, 2)
 				if err != nil {
 					pushErr(log, l, err)
-					return
+					return 0
 				}
 				sac := st.To(x, y)
 				setSwipeAction(l, sac)
-				return
+				return 1
 			})
 			l.SetTable(-3)
-			return
+			return 1
 		}
 
 		if ok, path := isElement(l, 1); ok {
