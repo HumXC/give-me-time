@@ -8,7 +8,10 @@ import (
 	"github.com/Shopify/go-lua"
 )
 
-// 此文件用于定义在 lua 中使用的函数，函数名以 "luaFunc" 开头，后面的单词代表方法名，
+// 此文件用于定义在 lua 中使用的函数，连接 api.go 中定义的函数。
+
+// 关于函数名：
+// 函数名以 "luaFunc" 开头，后面的单词代表方法名，
 // 但是在 lua 以小写开头的驼峰命名，例如 luaFuncPress 函数在 lua 中使用 "press" 调用。
 // 该文件下的函数定义符合该目录下 exampel.lua 的描述，luaFunc 内需验证参数的正确性。
 // 函数注释以一行是函数在 lua 中的使用方法
@@ -140,12 +143,12 @@ func luaFuncFind(api Api, storage Storage) lua.Function {
 		if ok, path := isElement(l, 1); ok {
 			e := storage.Element(path)
 			if e.Img == "" {
-				pushErr(l, fmt.Errorf("failed to find element[%s], it`s not a img element", path))
+				pushErr(l, fmt.Errorf("element [%s] does not exist", path))
 				return 0
 			}
 			p, v, err := api.FindE(e)
 			if err != nil {
-				pushErr(l, fmt.Errorf("failed to find element[%s]: %w", path, err))
+				pushErr(l, fmt.Errorf("element [%s] not found: %w", path, err))
 				return 0
 			}
 			l.PushInteger(p.X)
@@ -187,7 +190,7 @@ func luaFuncAdb(api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		rt = 1
 		if l.TypeOf(1) != lua.TypeString {
-			pushErr(l, fmt.Errorf("parameter error, [%v] not a string", l.ToValue(1)))
+			pushErr(l, fmt.Errorf("the parameter [%v] is not a string", l.ToValue(1)))
 			return 0
 		}
 		cmd, _ := l.ToString(1)
@@ -253,7 +256,8 @@ func pushElement(l *lua.State, name string, es []config.Element) {
 }
 
 func pushErr(l *lua.State, err error) {
-	lua.Errorf(l, err.Error())
+	lua.Errorf(l,
+		"lua bound function call error: "+err.Error())
 }
 
 // 从第 index 个参数中获取 duration，其中 duration 是一个正整数，如果参数不符合则返回 error。
@@ -264,10 +268,10 @@ func getDuration(l *lua.State, index int) (int, error) {
 	}
 	d, ok := l.ToInteger(index)
 	if !ok {
-		return 0, fmt.Errorf("duration [%v] is not an integer", v)
+		return 0, fmt.Errorf("the duration [%v] is not an integer", v)
 	}
 	if d < 0 {
-		return 0, fmt.Errorf("duration [%d] is not an positive integer", d)
+		return 0, fmt.Errorf("the duration [%d] is not a positive integer", d)
 	}
 	if d == 0 {
 		d = 100
@@ -278,12 +282,12 @@ func getDuration(l *lua.State, index int) (int, error) {
 func getXY(l *lua.State, indexX, indexY int) (int, int, error) {
 	x, ok := l.ToInteger(indexX)
 	if !ok {
-		err := fmt.Errorf("x [%v] is not an integer", l.ToValue(1))
+		err := fmt.Errorf("the x [%v] is not an integer", l.ToValue(1))
 		return 0, 0, err
 	}
 	y, ok := l.ToInteger(indexY)
 	if !ok {
-		err := fmt.Errorf("y [%v] is not an integer", l.ToValue(2))
+		err := fmt.Errorf("the y [%v] is not an integer", l.ToValue(2))
 		return 0, 0, err
 	}
 	return x, y, nil
