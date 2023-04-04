@@ -57,6 +57,8 @@ func NewApi(device devices.Device, element []config.Element) (Api, error) {
 		Device:     device,
 		Element:    make(map[string]config.Element),
 		ElementMat: make(map[string]gocv.Mat),
+		Sseract:    gosseract.NewClient(),
+		sseractMu:  &sync.Mutex{},
 	}
 	config.FlatElement(a.Element, "", element)
 	for k, e := range a.Element {
@@ -198,7 +200,7 @@ func (a *ApiImpl) FindE(e config.Element) (image.Point, float32, error) {
 }
 
 func (a *ApiImpl) Screencap() ([]byte, error) {
-	imgB, err := a.Device.ADB("shell screencap -p")
+	imgB, err := a.Device.ADB("shell /data/local/tmp/screencap 100")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get screencap: %w", err)
 	}
@@ -268,6 +270,7 @@ func (a *ApiImpl) Ocr(x1, y1, x2, y2 int) (string, error) {
 	if err != nil {
 		return "", makeErr(err)
 	}
+	os.WriteFile("test.jpg", buf.Bytes(), 0660)
 	a.sseractMu.Lock()
 	defer a.sseractMu.Unlock()
 	err = a.Sseract.SetImageFromBytes(buf.Bytes())

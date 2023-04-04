@@ -211,7 +211,7 @@ func luaFuncOcr(api Api) lua.Function {
 			pushErr(l, err)
 			return 0
 		}
-		x2, y2, err := getXY(l, 1, 2)
+		x2, y2, err := getXY(l, 3, 4)
 		if err != nil {
 			pushErr(l, err)
 			return 0

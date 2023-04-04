@@ -23,11 +23,11 @@ func (c *Client) Start() error {
 }
 func LoadProject(projectPath string, device devices.Device) (*Client, error) {
 	name := path.Base(projectPath)
-	opt, err := config.LoadInfo(path.Join(projectPath, name+".json"))
+	opt, err := config.LoadInfo(path.Join(projectPath, "info.json"))
 	if err != nil {
 		return nil, err
 	}
-	elm, err := config.LoadElement(path.Join(projectPath, name+".json"))
+	elm, err := config.LoadElement(path.Join(projectPath, "element.json"))
 	if err != nil {
 		return nil, err
 	}
