@@ -29,7 +29,7 @@ func luaFuncSleep(log *slog.Logger) lua.Function {
 			return
 		}
 		time.Sleep(time.Duration(duration) * time.Millisecond)
-		log.Info("sleep", duration, "millisecond")
+		log.Info(fmt.Sprintf("sleep %d millisecond", duration))
 		return
 	}
 }
@@ -84,8 +84,7 @@ func luaFuncPress(log *slog.Logger, api Api, storage Storage) lua.Function {
 // swipe(element|x, |y).to(element|x, |y).action(duration)
 // 在 duration 毫秒内从 swipe 传入的点滑动到 to 传入的点
 func luaFuncSwipe(log *slog.Logger, api Api, storage Storage) lua.Function {
-	return func(l *lua.State) (rt int) {
-		rt = 1
+	return func(l *lua.State) int {
 		setSwipeAction := func(l *lua.State, st SwipeAction) int {
 			l.NewTable()
 			l.PushString("action")
@@ -143,16 +142,16 @@ func luaFuncSwipe(log *slog.Logger, api Api, storage Storage) lua.Function {
 			e := storage.Element(path)
 			st := api.SwipeE(e)
 			setSwipeTo(l, st)
-			return
+			return 1
 		}
 		x, y, err := getXY(l, 1, 2)
 		if err != nil {
 			pushErr(log, l, err)
-			return
+			return 0
 		}
 		st := api.Swipe(x, y)
 		setSwipeTo(l, st)
-		return
+		return 1
 	}
 }
 
@@ -201,7 +200,7 @@ func luaFuncUnlock(log *slog.Logger, api Api) lua.Function {
 		if err != nil {
 			pushErr(log, l, err)
 		}
-		log.Info("lock")
+		log.Info("unlock")
 		return
 	}
 }

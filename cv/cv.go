@@ -24,9 +24,9 @@ func Find(img, tmpl gocv.Mat) (float32, image.Point, error) {
 		mask.Close()
 	}()
 
-	// 将图像转换为灰度图像
-	gocv.CvtColor(img, &grayImg, gocv.ColorBGRToGray)
-	gocv.CvtColor(tmpl, &grayTmpl, gocv.ColorBGRToGray)
+	// 将图像转换为RGBA图像
+	gocv.CvtColor(img, &grayImg, gocv.ColorBGRToRGBA)
+	gocv.CvtColor(tmpl, &grayTmpl, gocv.ColorBGRToRGBA)
 	gocv.MatchTemplate(grayImg, grayTmpl, &result, gocv.TmCcoeffNormed, mask)
 
 	_, maxVal, _, maxLoc := gocv.MinMaxLoc(result)
