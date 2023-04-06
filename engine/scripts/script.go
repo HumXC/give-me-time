@@ -2,7 +2,6 @@ package scripts
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/HumXC/give-me-time/engine/config"
 	"github.com/Shopify/go-lua"
@@ -27,6 +26,7 @@ type script struct {
 	l       *lua.State
 	file    string
 	storage Storage
+	log     slog.Logger
 }
 
 func (s *script) Run() error {
@@ -43,16 +43,14 @@ func (s *script) File() string {
 
 // 设置在 lua 中的全局函数
 func (s *script) setFunction(api Api) {
-	// TODO: 完善日志格式
-	log := slog.New(slog.NewTextHandler(os.Stdout))
-	s.l.Register("sleep", luaFuncSleep(log))
-	s.l.Register("press", luaFuncPress(log, api, s.storage))
-	s.l.Register("swipe", luaFuncSwipe(log, api, s.storage))
-	s.l.Register("find", luaFuncFind(log, api, s.storage))
-	s.l.Register("lock", luaFuncLock(log, api))
-	s.l.Register("unlock", luaFuncUnlock(log, api))
-	s.l.Register("adb", luaFuncAdb(log, api))
-	s.l.Register("ocr", luaFuncOcr(log, api))
+	s.l.Register("sleep", luaFuncSleep(s.log))
+	s.l.Register("press", luaFuncPress(s.log, api, s.storage))
+	s.l.Register("swipe", luaFuncSwipe(s.log, api, s.storage))
+	s.l.Register("find", luaFuncFind(s.log, api, s.storage))
+	s.l.Register("lock", luaFuncLock(s.log, api))
+	s.l.Register("unlock", luaFuncUnlock(s.log, api))
+	s.l.Register("adb", luaFuncAdb(s.log, api))
+	s.l.Register("ocr", luaFuncOcr(s.log, api))
 }
 
 // 设置在 lua 中的全局 E
@@ -64,13 +62,14 @@ func (s *script) setElement(es []config.Element) {
 	pushElement(s.l, "", es)
 }
 
-func LoadScript(file string, info *config.Info, element []config.Element, api Api) Script {
+func LoadScript(log slog.Logger, file string, info *config.Info, element []config.Element, api Api) Script {
 	s := &script{
 		l:    lua.NewState(),
 		file: file,
 		storage: Storage{
 			element: make(map[string]config.Element),
 		},
+		log: log,
 	}
 	config.FlatElement(s.storage.element, "", element)
 	lua.OpenLibraries(s.l)

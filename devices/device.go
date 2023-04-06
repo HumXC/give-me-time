@@ -11,4 +11,5 @@ type Input interface {
 type Device struct {
 	Input Input
 	ADB   adb.ADBRunner
+	Info  adb.Device
 }

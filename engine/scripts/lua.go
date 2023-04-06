@@ -21,7 +21,7 @@ import (
 // 当第一和第二参数为坐标 x 和 y 时，第三个参数为 duration
 
 // sleep(duration) 暂停 duration 毫秒
-func luaFuncSleep(log *slog.Logger) lua.Function {
+func luaFuncSleep(log slog.Logger) lua.Function {
 	return func(l *lua.State) (rt int) {
 		duration, err := getDuration(l, 1)
 		if err != nil {
@@ -36,7 +36,7 @@ func luaFuncSleep(log *slog.Logger) lua.Function {
 
 // press(element|x, duration|y, duration) ok
 // 按下屏幕上 element 或者坐标(x,y) 持续 duration 毫秒
-func luaFuncPress(log *slog.Logger, api Api, storage Storage) lua.Function {
+func luaFuncPress(log slog.Logger, api Api, storage Storage) lua.Function {
 	return func(l *lua.State) int {
 		if ok, path := isElement(l, 1); ok {
 			duration, err := getDuration(l, 2)
@@ -83,7 +83,7 @@ func luaFuncPress(log *slog.Logger, api Api, storage Storage) lua.Function {
 
 // swipe(element|x, |y).to(element|x, |y).action(duration)
 // 在 duration 毫秒内从 swipe 传入的点滑动到 to 传入的点
-func luaFuncSwipe(log *slog.Logger, api Api, storage Storage) lua.Function {
+func luaFuncSwipe(log slog.Logger, api Api, storage Storage) lua.Function {
 	return func(l *lua.State) int {
 		setSwipeAction := func(l *lua.State, st SwipeAction) int {
 			l.NewTable()
@@ -156,7 +156,7 @@ func luaFuncSwipe(log *slog.Logger, api Api, storage Storage) lua.Function {
 }
 
 // find(element) (x, y, maxVal)
-func luaFuncFind(log *slog.Logger, api Api, storage Storage) lua.Function {
+func luaFuncFind(log slog.Logger, api Api, storage Storage) lua.Function {
 	return func(l *lua.State) int {
 		if ok, path := isElement(l, 1); ok {
 			e := storage.Element(path)
@@ -182,7 +182,7 @@ func luaFuncFind(log *slog.Logger, api Api, storage Storage) lua.Function {
 }
 
 // lock()
-func luaFuncLock(log *slog.Logger, api Api) lua.Function {
+func luaFuncLock(log slog.Logger, api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		err := api.Lock()
 		if err != nil {
@@ -194,7 +194,7 @@ func luaFuncLock(log *slog.Logger, api Api) lua.Function {
 }
 
 // unlock()
-func luaFuncUnlock(log *slog.Logger, api Api) lua.Function {
+func luaFuncUnlock(log slog.Logger, api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		err := api.Unlock()
 		if err != nil {
@@ -208,7 +208,7 @@ func luaFuncUnlock(log *slog.Logger, api Api) lua.Function {
 // adb(cmd string) string
 // 执行 adb 命令，adb 命令已经附加了 -s 参数
 // 如果入参是 “shell ls”，实际执行的命令是“adb -s [...] shell ls”
-func luaFuncAdb(log *slog.Logger, api Api) lua.Function {
+func luaFuncAdb(log slog.Logger, api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		rt = 1
 		if l.TypeOf(1) != lua.TypeString {
@@ -229,7 +229,7 @@ func luaFuncAdb(log *slog.Logger, api Api) lua.Function {
 
 // ocr(x1, y1, x2, y2) string
 // 返回范围内的文字识别结果
-func luaFuncOcr(log *slog.Logger, api Api) lua.Function {
+func luaFuncOcr(log slog.Logger, api Api) lua.Function {
 	return func(l *lua.State) (rt int) {
 		rt = 1
 		x, y, err := getXY(l, 1, 2)
@@ -279,7 +279,7 @@ func pushElement(l *lua.State, name string, es []config.Element) {
 	}
 }
 
-func pushErr(log *slog.Logger, l *lua.State, err error) {
+func pushErr(log slog.Logger, l *lua.State, err error) {
 	msg := "lua bound function call error: " + err.Error()
 	log.Error(msg)
 	lua.Errorf(l, msg)

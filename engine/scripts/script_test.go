@@ -3,11 +3,13 @@ package scripts_test
 import (
 	"fmt"
 	"image"
+	"os"
 	"testing"
 
 	"github.com/HumXC/give-me-time/engine/config"
 	"github.com/HumXC/give-me-time/engine/scripts"
 	"github.com/Shopify/go-lua"
+	"golang.org/x/exp/slog"
 )
 
 type Api struct{}
@@ -74,7 +76,7 @@ func TestLoadScript(t *testing.T) {
 	}
 	var api scripts.Api
 	api = &Api{}
-	s := scripts.LoadScript("script_test.lua", opt, elm, api)
+	s := scripts.LoadScript(*slog.New(slog.NewTextHandler(os.Stdout)), "script_test.lua", opt, elm, api)
 	err = s.Run()
 
 	if err != nil {

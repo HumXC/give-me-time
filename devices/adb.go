@@ -16,10 +16,13 @@ func (a *ADB) FirstDevice() (*Device, error) {
 		return nil, err
 	}
 	for _, d := range ds {
-		return &Device{
+		dev := Device{
 			Input: d.Input,
 			ADB:   d.Cmd,
-		}, nil
+			Info:  d,
+		}
+		dev.Info.Cmd = nil
+		return &dev, nil
 	}
 	return nil, errors.New("no device")
 }
@@ -44,16 +47,19 @@ func (a *ADB) GetDevice(id string) (*Device, error) {
 			if d.ID != id {
 				continue
 			}
-			return &Device{
+			dev := Device{
 				Input: d.Input,
 				ADB:   d.Cmd,
-			}, nil
+				Info:  d,
+			}
+			dev.Info.Cmd = nil
+			return &dev, nil
 		}
 	}
 	return nil, errors.New(id + " not found")
 }
 func NewADB(adbPath string) ADB {
 	return ADB{
-		server: adb.NewServer(adb.NewADBRunner(adbPath)),
+		server: adb.NewServer(adb.NewADBRunner(adbPath), adbPath),
 	}
 }

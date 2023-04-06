@@ -1,5 +1,5 @@
-github.com/HumXC/adb-helper v0.0.0-20230325074621-c6c932d7c17e h1:vQgz9cQ8gifzH2nSdKbGjj1oSp02s2gvmZV/mpft1JU=
-github.com/HumXC/adb-helper v0.0.0-20230325074621-c6c932d7c17e/go.mod h1:K+jFW2SXyo4jlXg58aRpaC3JqNdbJGJjpVc5NKIX1pA=
+github.com/HumXC/adb-helper v0.0.0-20230406022903-1b432de6107e h1:YIAxKPVZoYRH8Aum2+LoSU6r9B33Bj55sEyTXP+uUbY=
+github.com/HumXC/adb-helper v0.0.0-20230406022903-1b432de6107e/go.mod h1:K+jFW2SXyo4jlXg58aRpaC3JqNdbJGJjpVc5NKIX1pA=
 github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf h1:VSUCKpFV0AfYGslgQSRdBI9HCVp1TCXJmScWD0VXL5g=
 github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf/go.mod h1:UCCi6u6YA8oXfJ15vEMiMGIaWWfLiOacinBPHxLXtEU=
 github.com/hybridgroup/mjpeg v0.0.0-20140228234708-4680f319790e/go.mod h1:eagM805MRKrioHYuU7iKLUyFPVKqVV6um5DAvCkUtXs=
