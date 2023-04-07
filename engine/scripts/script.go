@@ -2,6 +2,7 @@ package scripts
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/HumXC/give-me-time/engine/config"
 	"github.com/Shopify/go-lua"
@@ -42,7 +43,7 @@ func (s *script) File() string {
 }
 
 // 设置在 lua 中的全局函数
-func (s *script) setFunction(api Api) {
+func (s *script) setFunction(api Api, file string) {
 	s.l.Register("sleep", luaFuncSleep(s.log))
 	s.l.Register("press", luaFuncPress(s.log, api, s.storage))
 	s.l.Register("swipe", luaFuncSwipe(s.log, api, s.storage))
@@ -51,6 +52,7 @@ func (s *script) setFunction(api Api) {
 	s.l.Register("unlock", luaFuncUnlock(s.log, api))
 	s.l.Register("adb", luaFuncAdb(s.log, api))
 	s.l.Register("ocr", luaFuncOcr(s.log, api))
+	s.l.Register("read_json", luaFuncReadJson(s.log, path.Dir(file)))
 }
 
 // 设置在 lua 中的全局 E
@@ -74,7 +76,7 @@ func LoadScript(log slog.Logger, file string, info *config.Info, element []confi
 	config.FlatElement(s.storage.element, "", element)
 	lua.OpenLibraries(s.l)
 	s.setElement(element)
-	s.setFunction(api)
+	s.setFunction(api, file)
 
 	return s
 }

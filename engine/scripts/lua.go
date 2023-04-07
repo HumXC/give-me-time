@@ -1,7 +1,11 @@
 package scripts
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"path"
 	"time"
 
 	"github.com/HumXC/give-me-time/engine/config"
@@ -13,7 +17,7 @@ import (
 
 // 关于函数名：
 // 函数名以 "luaFunc" 开头，后面的单词代表方法名，
-// 但是在 lua 以小写开头的驼峰命名，例如 luaFuncPress 函数在 lua 中使用 "press" 调用。
+// 但是在 lua 以下划线命名法命名，例如 luaFuncPress 函数在 lua 中使用 "press" 调用。
 // 该文件下的函数定义符合该目录下 exampel.lua 的描述，luaFunc 内需验证参数的正确性。
 // 函数注释以一行是函数在 lua 中的使用方法
 // 例如 press(element|x, duration|y, duration)
@@ -253,6 +257,39 @@ func luaFuncOcr(log slog.Logger, api Api) lua.Function {
 	}
 }
 
+// read_json(file) table
+// 读取一个 json 文件，特别注意的是//TODO
+func luaFuncReadJson(log slog.Logger, dir string) lua.Function {
+	return func(l *lua.State) int {
+		fileName, ok := l.ToString(1)
+		if !ok {
+			pushErr(log, l, errors.New("file must be a string"))
+			return 0
+		}
+		file := PatchAbsPath(fileName, dir)
+		b, err := os.ReadFile(file)
+		if err != nil {
+			pushErr(log, l, fmt.Errorf("read file error: %w", err))
+			return 0
+		}
+		m := make(map[string]any)
+		err = json.Unmarshal(b, &m)
+		if err != nil {
+			pushErr(log, l, fmt.Errorf("json unmarshal error: %w", err))
+			return 0
+		}
+		PushMap(l, m)
+		return 1
+	}
+}
+
+// PatchAbsPath
+func PatchAbsPath(p, dir string) string {
+	if !path.IsAbs(p) {
+		return path.Join(dir, p)
+	}
+	return p
+}
 func pushElement(l *lua.State, name string, es []config.Element) {
 	if len(es) == 0 {
 		return

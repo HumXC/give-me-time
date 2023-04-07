@@ -3,7 +3,7 @@
 -- E 是一个嵌套的 table，其子元素也是 table。
 -- 每一个元素都必须有一个 "_name" 字段用“点分”的形式表示其层级关系
 -- 例如 E.main.start 的 _name 就是 "main.start" -> E.main.start["_name"]="main.start"
-function assertString(a, b) 
+local function assertString(a, b) 
     if type(a) ~= "string" then
         error("assert failed [" .. a .. "] is not a string")
     end
@@ -23,7 +23,7 @@ assertString(E.game._path, "game")
 
 -- 测试全局函数
 -- 调用这个函数说明 fn 必须发生错误
-function assertError(fnName, fn, ...)
+local function assertError(fnName, fn, ...)
     local noterr = pcall(fn,...)
     if noterr then 
         error("function [" .. fnName .. "] should be ab error, but not")
@@ -52,10 +52,43 @@ swipe(E.main).to(E.main.start).action(0)
 assertError("swipe", swipe(3, 4).action, 0) -- 没有第二个点
 assertError("swipe", swipe, "main") -- 参数不合理
 assertError("swipe", swipe, 1) -- 参数个数不对
-sh = swipe(E.main)
+local sh = swipe(E.main)
 assertError("swipe.action", sh.action, E.main.start)
 assertError("swipe.action", sh.action, -1)
 
 -- adb
 adb("ssss")
 assertError("adb", adb, -1)
+
+-- read_json
+local function assertNumber(a, b) 
+    if type(a) ~= "number" then
+        error("assert failed [" .. a .. "] is not a number")
+    end
+    if type(b) ~= "number" then
+        error("assert failed [" .. b .. "] is not a number")
+    end
+    if a ~= b then
+        error("assert failed: [" .. a .."] is not equal [" .. b .. "]")
+    end
+end
+
+local function assertBool(a, b) 
+    if type(a) ~= "boolean" then
+        error("assert failed [" .. a .. "] is not a bool")
+    end
+    if type(b) ~= "boolean" then
+        error("assert failed [" .. b .. "] is not a bool")
+    end
+    if a ~= b then
+        error("assert failed: [" .. a .."] is not equal [" .. b .. "]")
+    end
+end
+
+local json = read_json("info_test.json")
+assertString(json.test_json_string,"ok")
+assertString(json.test_json_obj.name,"jack")
+assertBool(json.test_json_bool,true)
+assertNumber(json.test_json_number,299)
+assertNumber(#json.test_json_obj,0)
+assertNumber(#json.test_json_array,3)
