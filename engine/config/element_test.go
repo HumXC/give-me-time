@@ -26,6 +26,13 @@ func TestVerifyElement(t *testing.T) {
 				{Name: "test8"},
 			}},
 		{Name: "test3"},
+		// 有 Name 包含符号 '.'
+
+		{Name: "test.a"},
+
+		// 有 Name 包含符号 '-'
+
+		{Name: "test-a"},
 	}
 	// 空的 Element
 	good2 := []config.Element{}
@@ -45,14 +52,6 @@ func TestVerifyElement(t *testing.T) {
 			{Name: "test2", Element: []config.Element{
 				{Name: "test3"},
 			}},
-		},
-		// 有 Name 包含符号 '.'
-		"bad3": {
-			{Name: "test.a"},
-		},
-		// 有 Name 包含符号 '-'
-		"bad4": {
-			{Name: "test-a"},
 		},
 	}
 

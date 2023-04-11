@@ -7,10 +7,10 @@ import (
 )
 
 func TestVerifyInfo(t *testing.T) {
-	good := &config.Info{
+	good := config.Info{
 		Name: "test",
 	}
-	bad1 := &config.Info{
+	bad1 := config.Info{
 		Name: "",
 	}
 	err := config.VerifyInfo(good)

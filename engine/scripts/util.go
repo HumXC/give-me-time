@@ -114,6 +114,7 @@ func LuaTableToSlice(val reflect.Value) []any {
 	}
 	for i := 0; i < array.Len(); i++ {
 		value := LuaValue(array.Index(i).Elem())
+		// 此处判断 nil 是因为 "array" 中可能存在额外的，不在预期内的 nil 值
 		if value != nil {
 			s = append(s, value)
 		}

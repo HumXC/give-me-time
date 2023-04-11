@@ -258,7 +258,7 @@ func luaFuncOcr(log slog.Logger, api Api) lua.Function {
 }
 
 // read_json(file) table
-// 读取一个 json 文件，特别注意的是//TODO
+// 读取一个 json 文件
 func luaFuncReadJson(log slog.Logger, dir string) lua.Function {
 	return func(l *lua.State) int {
 		fileName, ok := l.ToString(1)

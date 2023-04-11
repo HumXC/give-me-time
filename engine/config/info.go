@@ -15,28 +15,28 @@ type Info struct {
 // 从 file 加载 json 文件，反序列化成 Info 并验证 Info 的正确性
 // 内部已经调用了 VerifyInfo
 func LoadInfo(file string) (*Info, error) {
-	optB, err := os.ReadFile(file)
-	opt := new(Info)
+	infoB, err := os.ReadFile(file)
+	info := new(Info)
 	makeErr := func(err error) error {
 		return fmt.Errorf("failed to load info: %w", err)
 	}
 	if err != nil {
 		return nil, makeErr(err)
 	}
-	err = json.Unmarshal(optB, opt)
+	err = json.Unmarshal(infoB, info)
 	if err != nil {
 		return nil, makeErr(err)
 	}
-	err = VerifyInfo(opt)
+	err = VerifyInfo(*info)
 	if err != nil {
 		return nil, makeErr(err)
 	}
-	return opt, nil
+	return info, nil
 }
 
 // 检查 Info 中的内容是否符合要求：
 // - Name 不能为空
-func VerifyInfo(opt *Info) error {
+func VerifyInfo(opt Info) error {
 	if opt.Name == "" {
 		return fmt.Errorf("field [name] is empty in info")
 	}
