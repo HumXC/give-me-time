@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/HumXC/adb-helper"
-	"github.com/HumXC/give-me-time/devices"
 	"github.com/HumXC/give-me-time/engine"
 )
 
@@ -17,12 +16,9 @@ func TestLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	device := devices.Device{
-		ADB:   ds[0].Cmd,
-		Input: ds[0].Input,
-	}
+	device := ds[0]
 
-	client, err := engine.LoadProject(TestProject, device)
+	client, err := engine.LoadProject("test/明日方舟", device)
 	if err != nil {
 		t.Fatal(err)
 	}

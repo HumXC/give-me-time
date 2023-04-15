@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/HumXC/adb-helper"
 	"github.com/HumXC/give-me-time/devices"
 	"github.com/HumXC/give-me-time/engine"
 )
@@ -25,17 +26,17 @@ func main() {
 	if projectName == "" {
 		os.Exit(0)
 	}
-	adb := devices.NewADB(adbPath)
-	var device *devices.Device
+	_adb := devices.NewADB(adbPath)
+	var device *adb.Device
 	if deviceID != "" {
-		d, err := adb.GetDevice(deviceID)
+		d, err := _adb.GetDevice(deviceID)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 		device = d
 	} else {
-		d, err := adb.FirstDevice()
+		d, err := _adb.FirstDevice()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

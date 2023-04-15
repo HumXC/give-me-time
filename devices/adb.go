@@ -10,19 +10,13 @@ type ADB struct {
 	server adb.Server
 }
 
-func (a *ADB) FirstDevice() (*Device, error) {
+func (a *ADB) FirstDevice() (*adb.Device, error) {
 	ds, err := a.server.Devices()
 	if err != nil {
 		return nil, err
 	}
 	for _, d := range ds {
-		dev := Device{
-			Input: d.Input,
-			ADB:   d.Cmd,
-			Info:  d,
-		}
-		dev.Info.Cmd = nil
-		return &dev, nil
+		return &d, nil
 	}
 	return nil, errors.New("no device")
 }
@@ -37,7 +31,7 @@ func (a *ADB) List() ([]string, error) {
 	}
 	return result, nil
 }
-func (a *ADB) GetDevice(id string) (*Device, error) {
+func (a *ADB) GetDevice(id string) (*adb.Device, error) {
 	ds, err := a.server.Devices()
 	if err != nil {
 		return nil, err
@@ -47,13 +41,7 @@ func (a *ADB) GetDevice(id string) (*Device, error) {
 			if d.ID != id {
 				continue
 			}
-			dev := Device{
-				Input: d.Input,
-				ADB:   d.Cmd,
-				Info:  d,
-			}
-			dev.Info.Cmd = nil
-			return &dev, nil
+			return &d, nil
 		}
 	}
 	return nil, errors.New(id + " not found")

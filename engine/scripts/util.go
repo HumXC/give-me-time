@@ -14,6 +14,10 @@ func PushValue(l *lua.State, v any) {
 	switch reflect.TypeOf(v).Kind() {
 	case reflect.Float64:
 		l.PushNumber(v.(float64))
+	case reflect.Int:
+		l.PushNumber(float64(v.(int)))
+	case reflect.Int64:
+		l.PushNumber(float64(v.(int64)))
 	case reflect.Bool:
 		l.PushBoolean(v.(bool))
 	case reflect.String:

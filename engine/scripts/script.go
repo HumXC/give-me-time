@@ -2,8 +2,8 @@ package scripts
 
 import (
 	"fmt"
-	"path"
 
+	"github.com/HumXC/adb-helper"
 	"github.com/HumXC/give-me-time/engine/config"
 	"github.com/Shopify/go-lua"
 	"golang.org/x/exp/slog"
@@ -24,10 +24,9 @@ func (s *Storage) Element(key string) config.Element {
 }
 
 type script struct {
-	l       *lua.State
-	file    string
-	storage Storage
-	log     slog.Logger
+	l    *lua.State
+	file string
+	log  slog.Logger
 }
 
 func (s *script) Run() error {
@@ -43,16 +42,18 @@ func (s *script) File() string {
 }
 
 // 设置在 lua 中的全局函数
-func (s *script) setFunction(api Api, file string) {
-	s.l.Register("sleep", luaFuncSleep(s.log))
-	s.l.Register("press", luaFuncPress(s.log, api, s.storage))
-	s.l.Register("swipe", luaFuncSwipe(s.log, api, s.storage))
-	s.l.Register("find", luaFuncFind(s.log, api, s.storage))
-	s.l.Register("lock", luaFuncLock(s.log, api))
-	s.l.Register("unlock", luaFuncUnlock(s.log, api))
-	s.l.Register("adb", luaFuncAdb(s.log, api))
-	s.l.Register("ocr", luaFuncOcr(s.log, api))
-	s.l.Register("read_json", luaFuncReadJson(s.log, path.Dir(file)))
+func (s *script) setFunction(api ApiImg, file string) {
+
+}
+func (s *script) setApi(name string, api LuaApi, log slog.Logger) {
+	fns := api.ToLuaFunc(log)
+	s.l.NewTable()
+	for k, f := range fns {
+		s.l.PushString(k)
+		s.l.PushGoFunction(f)
+		s.l.SetTable(-3)
+	}
+	s.l.SetGlobal(name)
 }
 
 // 设置在 lua 中的全局 E
@@ -61,22 +62,25 @@ func (s *script) setElement(es []config.Element) {
 	defer func() {
 		s.l.SetGlobal("E")
 	}()
-	pushElement(s.l, "", es)
+	PushElement(s.l, "", es)
 }
 
-func LoadScript(log slog.Logger, file string, info *config.Info, element []config.Element, api Api) Script {
+func LoadScript(device adb.Device, log slog.Logger, file string, info *config.Info, element []config.Element) (Script, error) {
 	s := &script{
 		l:    lua.NewState(),
 		file: file,
-		storage: Storage{
-			element: make(map[string]config.Element),
-		},
-		log: log,
+		log:  log,
 	}
-	config.FlatElement(s.storage.element, "", element)
 	lua.OpenLibraries(s.l)
 	s.setElement(element)
-	s.setFunction(api, file)
-
-	return s
+	elImg, elArea, _, err := config.ParseElement(element)
+	apiImg, err := NewApiImg(device.Cmd, elImg, elArea)
+	if err != nil {
+		return nil, err
+	}
+	apiAdb := NewApiAdb(device)
+	s.setApi("Img", apiImg, log)
+	s.setApi("Adb", apiAdb, log)
+	s.l.Register("sleep", luaFuncSleep(log))
+	return s, nil
 }

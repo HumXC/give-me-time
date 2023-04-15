@@ -1,11 +1,26 @@
 [
     {
         "name": "main",
+        "img": "ss",
         "element": [
             { "name": "start" },
             {
                 "name": "text",
-                "element": [{ "name": "input" }]
+                "area": {
+                    "x1": 1,
+                    "y1": 1,
+                    "x2": 1,
+                    "y2": 0
+                },
+                "element": [
+                    {
+                        "name": "input",
+                        "point": {
+                            "x": 1,
+                            "y": 1
+                        }
+                    }
+                ]
             }
         ]
     },
