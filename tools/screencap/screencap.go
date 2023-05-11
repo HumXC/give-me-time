@@ -1,14 +1,17 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
+
+	"github.com/sunshineplan/imgconv"
 )
 
 // 这是运行在安卓系统里的程序
@@ -18,22 +21,35 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	buf, err := Cmd("screencap", "-p")
+	null, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0755)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	begain := time.Now()
+	fmt.Sprintln(begain)
+	c := exec.Command("screencap", "-p")
+	buf, _ := c.StdoutPipe()
+	c.Start()
 	if err != nil && !isIgnoreErr {
 		panic(err)
-	} else {
-		if buf.Len() == 0 {
-			return
-		}
 	}
 	p, err := png.Decode(buf)
 	if err != nil {
 		panic(err)
 	}
-	err = jpeg.Encode(os.Stdout, p, &jpeg.Options{Quality: quality})
+
+	begain = time.Now()
+	err = jpeg.Encode(null, p, &jpeg.Options{Quality: quality})
 	if err != nil {
 		panic(err)
 	}
+
+	// -----
+	begain = time.Now()
+	imgconv.Write(null, p, &imgconv.FormatOption{Format: imgconv.JPEG, EncodeOption: []imgconv.EncodeOption{
+		imgconv.Quality(10),
+	}})
 }
 
 // 第一个返回值是 [JPEG 的质量]，第二个返回值是 [是否忽略错误]
@@ -63,16 +79,15 @@ func ParseArg(args []string) (int, bool, error) {
 	return quality, ignoreErr, nil
 }
 
-func Cmd(name string, arg ...string) (*bytes.Buffer, error) {
+func Cmd(name string, arg ...string) (io.ReadCloser, error) {
 	var err error
 	c := exec.Command(name, arg...)
-	stdout := bytes.NewBuffer(make([]byte, 0, 4096))
-	stderr := &bytes.Buffer{}
-	c.Stdout = stdout
-	c.Stderr = stderr
+	stdout, _ := c.StdoutPipe()
+	stderr, _ := c.StderrPipe()
 	err = c.Run()
 	if err != nil {
-		return nil, errors.New(err.Error() + " :" + stderr.String())
+		errMsg, _ := io.ReadAll(stderr)
+		return nil, errors.New(err.Error() + " :" + string(errMsg))
 	}
 	return stdout, nil
 }
