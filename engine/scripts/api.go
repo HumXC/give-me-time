@@ -8,93 +8,14 @@ import (
 
 	"github.com/HumXC/adb-helper"
 	"github.com/HumXC/give-me-time/cv"
-	"github.com/Shopify/go-lua"
 	"github.com/otiai10/gosseract/v2"
 	"gocv.io/x/gocv"
-	"golang.org/x/exp/slog"
 )
 
 var ErrArgs = errors.New("argument error")
 
 func NewArgsErr(want, got any) error {
 	return fmt.Errorf("%w: want [%v], got [%v]", ErrArgs, want, got)
-}
-
-type LuaApi interface {
-	ToLuaFunc(slog.Logger) map[string]lua.Function
-}
-
-// 从 lua.state 中获取输入参数
-type ArgsPicker struct {
-	l *lua.State
-}
-
-// 获取 string 参数，如果不是 string，第二个返回值为 false
-func (a *ArgsPicker) String(index int) (string, bool) {
-	return a.l.ToString(index)
-}
-
-// 获取 string 参数，并且不为空字符串，如果不符合，第二个返回值为 false
-func (a *ArgsPicker) StringWithNotEmpty(index int) (string, bool) {
-	s, ok := a.l.ToString(index)
-	if !ok {
-		return s, false
-	}
-	if s == "" {
-		return s, false
-	}
-	return s, true
-}
-
-// 获取一个 integer 参数
-func (a *ArgsPicker) Int(index int) (int, bool) {
-	return a.l.ToInteger(index)
-}
-
-// 获取一个比 bigger 大的 integer 参数
-func (a *ArgsPicker) IntWithBigger(index, bigger int) (int, bool) {
-	i, ok := a.l.ToInteger(index)
-	if !ok {
-		return i, ok
-	}
-	if i <= bigger {
-		return i, false
-	}
-	return i, true
-}
-
-// 获取一个比 smaller 小的 integer 参数
-func (a *ArgsPicker) IntWithSmaller(index, smaller int) (int, bool) {
-	i, ok := a.l.ToInteger(index)
-	if !ok {
-		return i, ok
-	}
-	if i >= smaller {
-		return i, false
-	}
-	return i, true
-}
-
-// 用在 lua.Function 中，判段第 index 个参数是不是 Element
-// 如果是，则返回 Element 的 "_path"
-func (a *ArgsPicker) Element(index int) (string, bool) {
-	if a.l.TypeOf(index) != lua.TypeTable {
-		return "", false
-	}
-	a.l.Field(index, "_type")
-	t, ok := a.l.ToString(-1)
-	if !ok && t != "element" {
-		return "", false
-	}
-	a.l.Field(index, "_path")
-	s, ok := a.l.ToString(-1)
-	if !ok {
-		return "", false
-	}
-	return s, true
-}
-func NewArgsPicker(l *lua.State) ArgsPicker {
-	return ArgsPicker{l: l}
 }
 
 type ImgHandler interface {

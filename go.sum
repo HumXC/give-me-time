@@ -1,7 +1,5 @@
 github.com/HumXC/adb-helper v0.0.0-20230406022903-1b432de6107e h1:YIAxKPVZoYRH8Aum2+LoSU6r9B33Bj55sEyTXP+uUbY=
 github.com/HumXC/adb-helper v0.0.0-20230406022903-1b432de6107e/go.mod h1:K+jFW2SXyo4jlXg58aRpaC3JqNdbJGJjpVc5NKIX1pA=
-github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf h1:VSUCKpFV0AfYGslgQSRdBI9HCVp1TCXJmScWD0VXL5g=
-github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf/go.mod h1:UCCi6u6YA8oXfJ15vEMiMGIaWWfLiOacinBPHxLXtEU=
 github.com/disintegration/imaging v1.6.2 h1:w1LecBlG2Lnp8B3jk5zSuNqd7b4DXhcjwek1ei82L+c=
 github.com/disintegration/imaging v1.6.2/go.mod h1:44/5580QXChDfwIclfc/PCwrr44amcmDAg8hxG0Ewe4=
 github.com/hhrutter/lzw v1.0.0 h1:laL89Llp86W3rRs83LvKbwYRx6INE8gDn0XNb1oXtm0=

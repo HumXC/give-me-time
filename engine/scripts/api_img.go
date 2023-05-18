@@ -9,14 +9,11 @@ import (
 
 	"github.com/HumXC/adb-helper"
 	"github.com/HumXC/give-me-time/engine/config"
-	"github.com/Shopify/go-lua"
 	"gocv.io/x/gocv"
-	"golang.org/x/exp/slog"
 )
 
 // “Element” 类型参数是指在 lua 中以 “click(E.main.start)” 的形式调用
 type ApiImg interface {
-	LuaApi
 	// 查找元素
 	FindE(e string) (image.Point, float32, error)
 	// 返回范围内的文字识别结果
@@ -119,82 +116,6 @@ func (a *apiImgImpl) Unlock() error {
 	}
 	a.nowImg = nil
 	return nil
-}
-
-func (a *apiImgImpl) ToLuaFunc(log slog.Logger) map[string]lua.Function {
-	m := make(map[string]lua.Function)
-	// find(element) (x, y, maxVal)
-	m["find"] = func(l *lua.State) int {
-		args := NewArgsPicker(l)
-		element, ok := args.Element(1)
-		if !ok {
-			PushErr(log, l, NewArgsErr("img element", l.ToValue(1)))
-			return 0
-		}
-		p, v, err := a.FindE(element)
-		if err != nil {
-			PushErr(log, l, err)
-			return 0
-		}
-		l.PushInteger(p.X)
-		l.PushInteger(p.Y)
-		l.PushNumber(float64(v))
-		log.Info(fmt.Sprintf(
-			"find element [%s] on (%d, %d), val: %f", element, p.X, p.Y, v))
-		return 3
-	}
-	// ocr(x1, y1, x2, y2) string
-	m["ocr"] = func(l *lua.State) int {
-		args := NewArgsPicker(l)
-		if e, ok := args.Element(1); ok {
-			str, err := a.OcrE(e)
-			if err != nil {
-				PushErr(log, l, err)
-				return 0
-			}
-			l.PushString(str)
-			log.Info(fmt.Sprintf("ocr element [%s]: %s", e, str))
-			return 1
-		}
-		points := [4]int{}
-		for i := 0; i < 4; i++ {
-			_i, ok := args.Int(i + 1)
-			if !ok {
-				PushErr(log, l, NewArgsErr("number", l.ToValue(i+1)))
-				return 0
-			}
-			points[i] = _i
-		}
-		str, err := a.Ocr(points[0], points[1], points[2], points[3])
-		if err != nil {
-			PushErr(log, l, err)
-			return 0
-		}
-		l.PushString(str)
-		log.Info(fmt.Sprintf("ocr (%d, %d)-(%d, %d): %s", points[0], points[1], points[2], points[3], str))
-		return 1
-	}
-	// lock()
-	m["lock"] = func(l *lua.State) int {
-		err := a.Lock()
-		if err != nil {
-			PushErr(log, l, err)
-			return 0
-		}
-		log.Info("locked")
-		return 0
-	}
-	// unlock()
-	m["unlock"] = func(l *lua.State) int {
-		err := a.Unlock()
-		if err != nil {
-			PushErr(log, l, err)
-			return 0
-		}
-		log.Info("unlocked")
-		return 0
-	}
-	return m
 }
 
 func NewApiImg(adbCmd adb.ADBRunner, elementImg map[string]config.ElImg, elementArea map[string]config.ElArea) (ApiImg, error) {

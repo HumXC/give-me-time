@@ -7,7 +7,6 @@ import (
 
 	"github.com/HumXC/adb-helper"
 	"github.com/HumXC/give-me-time/devices"
-	"github.com/HumXC/give-me-time/engine"
 )
 
 var (
@@ -43,14 +42,6 @@ func main() {
 		}
 		device = d
 	}
-	client, err := engine.LoadProject(projectName, *device)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	err = client.Start()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	// 占个位先
+	_ = fmt.Sprint(device)
 }
