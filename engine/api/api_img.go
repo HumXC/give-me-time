@@ -1,4 +1,4 @@
-package scripts
+package api
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"image/jpeg"
 
 	"github.com/HumXC/adb-helper"
-	"github.com/HumXC/give-me-time/engine/config"
+	"github.com/HumXC/give-me-time/engine/project"
 	"gocv.io/x/gocv"
 )
 
@@ -28,7 +28,7 @@ type apiImgImpl struct {
 	screencap   ScreencapTool
 	nowImg      []byte
 	elementMat  map[string]gocv.Mat
-	elementArea map[string]config.ElArea
+	elementArea map[string]project.ElArea
 }
 
 func (a *apiImgImpl) FindE(e string) (image.Point, float32, error) {
@@ -118,7 +118,7 @@ func (a *apiImgImpl) Unlock() error {
 	return nil
 }
 
-func NewApiImg(adbCmd adb.ADBRunner, elementImg map[string]config.ElImg, elementArea map[string]config.ElArea) (ApiImg, error) {
+func NewApiImg(adbCmd adb.ADBRunner, elementImg map[string]project.ElImg, elementArea map[string]project.ElArea) (ApiImg, error) {
 	a := apiImgImpl{
 		elementMat: make(map[string]gocv.Mat),
 		imgHander:  newImgHander(),

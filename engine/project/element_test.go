@@ -1,15 +1,15 @@
-package config_test
+package project_test
 
 import (
 	"encoding/json"
 	"os"
 	"testing"
 
-	"github.com/HumXC/give-me-time/engine/config"
+	"github.com/HumXC/give-me-time/engine/project"
 )
 
 func TestLoadElement(t *testing.T) {
-	_, err := config.LoadElement("element_test.json")
+	_, err := project.LoadElement("element_test.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -17,10 +17,10 @@ func TestLoadElement(t *testing.T) {
 
 func TestVerifyElement(t *testing.T) {
 	// 正确的 Element
-	good1 := []config.Element{
+	good1 := []project.Element{
 		{Name: "test"},
 		{Name: "test2",
-			Element: []config.Element{
+			Element: []project.Element{
 				{Name: "test4"},
 				{Name: "test5"},
 				{Name: "test6"},
@@ -34,10 +34,10 @@ func TestVerifyElement(t *testing.T) {
 		{Name: "test-a"},
 	}
 	// 空的 Element
-	good2 := []config.Element{}
+	good2 := []project.Element{}
 
 	// 不正确的 Element
-	bads := map[string][]config.Element{
+	bads := map[string][]project.Element{
 		// 同一节点下有重复的 Name
 		"bad1": {
 			{Name: "test"},
@@ -45,10 +45,10 @@ func TestVerifyElement(t *testing.T) {
 		},
 		// 有 Name 为空
 		"bad2": {
-			{Name: "", Element: []config.Element{
+			{Name: "", Element: []project.Element{
 				{Name: "test"},
 			}},
-			{Name: "test2", Element: []config.Element{
+			{Name: "test2", Element: []project.Element{
 				{Name: "test3"},
 			}},
 		},
@@ -61,18 +61,18 @@ func TestVerifyElement(t *testing.T) {
 		},
 	}
 
-	err := config.VerifyElement("", good1)
+	err := project.VerifyElement("", good1)
 	if err != nil {
 		t.Error("case [good1] verify failed:", err)
 		return
 	}
-	err = config.VerifyElement("", good2)
+	err = project.VerifyElement("", good2)
 	if err != nil {
 		t.Error("case [good2] verify failed:", err)
 		return
 	}
 	for k, v := range bads {
-		err = config.VerifyElement("", v)
+		err = project.VerifyElement("", v)
 		if err == nil {
 			t.Error("case [" + k + "] should be an error, but not")
 			return
@@ -85,7 +85,7 @@ func TestSetType(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	es := make([]config.Element, 0)
+	es := make([]project.Element, 0)
 	ms := make([]map[string]any, 0)
 	err = json.Unmarshal(b, &es)
 	if err != nil {
@@ -102,10 +102,10 @@ func TestSetType(t *testing.T) {
 		"main.text":       "area",
 		"main.text.input": "point",
 	}
-	es = config.SetType(es, ms)
+	es = project.SetType(es, ms)
 
-	m := make(map[string]config.Element)
-	config.FlatElement(m, "", es)
+	m := make(map[string]project.Element)
+	project.FlatElement(m, "", es)
 	for k, e := range m {
 		if result[k] != e.Type {
 			t.Errorf("[%s] want: [%s], got: [%s]", k, result[k], e.Type)

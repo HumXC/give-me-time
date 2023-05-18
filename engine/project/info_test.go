@@ -1,31 +1,31 @@
-package config_test
+package project_test
 
 import (
 	"testing"
 
-	"github.com/HumXC/give-me-time/engine/config"
+	"github.com/HumXC/give-me-time/engine/project"
 )
 
 func TestVerifyInfo(t *testing.T) {
-	good := config.Info{
+	good := project.Info{
 		Name: "test",
 	}
-	bad1 := config.Info{
+	bad1 := project.Info{
 		Name: "",
 	}
-	err := config.VerifyInfo(good)
+	err := project.VerifyInfo(good)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	err = config.VerifyInfo(bad1)
+	err = project.VerifyInfo(bad1)
 	if err == nil {
 		t.Error("case [bad1] should be an error")
 		return
 	}
 }
 func TestLoadInfo(t *testing.T) {
-	_, err := config.LoadInfo("info_test.json")
+	_, err := project.LoadInfo("info_test.json")
 	if err != nil {
 		t.Error(err)
 	}

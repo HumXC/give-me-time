@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/HumXC/adb-helper"
-	"github.com/HumXC/give-me-time/engine/config"
+	"github.com/HumXC/give-me-time/engine/project"
 	"golang.org/x/exp/slog"
 )
 
@@ -27,7 +27,7 @@ Device:
 		dev.ID, dev.IsOnline, dev.Product, dev.Model, dev.ADBPath)
 	_, _ = io.WriteString(log, msg)
 }
-func LogPrintInfo(log io.Writer, info config.Info) {
+func LogPrintInfo(log io.Writer, info project.Info) {
 	fmtMsg := `Info:
 	Name: %s
 	Discripyion: %s
@@ -38,12 +38,12 @@ func LogPrintInfo(log io.Writer, info config.Info) {
 	_, _ = io.WriteString(log, msg)
 }
 
-func LogPrintElement(log io.Writer, element []config.Element) {
+func LogPrintElement(log io.Writer, element []project.Element) {
 	msg := "Element:\n" + treeElement("	", element)
 	_, _ = io.WriteString(log, msg)
 }
 
-func treeElement(prefix string, es []config.Element) string {
+func treeElement(prefix string, es []project.Element) string {
 	if len(es) == 0 {
 		return ""
 	}

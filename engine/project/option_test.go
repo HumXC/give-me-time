@@ -1,13 +1,13 @@
-package config_test
+package project_test
 
 import (
 	"testing"
 
-	"github.com/HumXC/give-me-time/engine/config"
+	"github.com/HumXC/give-me-time/engine/project"
 )
 
 func TestVerifyOption(t *testing.T) {
-	good := []config.Option{{
+	good := []project.Option{{
 		Name:    "test1",
 		Type:    "string",
 		Default: "事实上",
@@ -25,11 +25,11 @@ func TestVerifyOption(t *testing.T) {
 		Default: false,
 	},
 	}
-	err := config.VerifyOption(good)
+	err := project.VerifyOption(good)
 	if err != nil {
 		t.Errorf("此处不应该有错误")
 	}
-	bads := [][]config.Option{{{
+	bads := [][]project.Option{{{
 		Name:    "test1",
 		Type:    "",
 		Default: "事实上",
@@ -65,7 +65,7 @@ func TestVerifyOption(t *testing.T) {
 		Default: 0.0,
 	}}}
 	for _, v := range bads {
-		err = config.VerifyOption(v)
+		err = project.VerifyOption(v)
 		if err == nil {
 			t.Errorf("此处应该有错误")
 		}
@@ -73,7 +73,7 @@ func TestVerifyOption(t *testing.T) {
 }
 
 func TestParseOption(t *testing.T) {
-	opts := []config.Option{
+	opts := []project.Option{
 		{
 			Name:    "name",
 			Type:    "string",
@@ -92,7 +92,7 @@ func TestParseOption(t *testing.T) {
 		"bool": true, "name": "jack", "num": 19.2,
 	}
 	userOption := "user_option_test.json"
-	m, _ := config.ParseOption(opts, userOption)
+	m, _ := project.ParseOption(opts, userOption)
 	for k, v := range result {
 		if m[k] != v {
 			t.Errorf("want: %v, got: %v", v, m[k])
