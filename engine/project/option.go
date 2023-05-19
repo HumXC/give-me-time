@@ -8,12 +8,12 @@ import (
 )
 
 type Option struct {
-	Name         string `json:"name"`
-	Type         string `json:"type"` // string, number, bool
-	Discription  string `json:"discription"`
-	Select       []any  `json:"select"`
-	IsOnlySelect bool   `json:"is_only_select"`
-	Default      any    `json:"default"`
+	Name         string `yaml:"name"`
+	Type         string `yaml:"type"` // string, number, bool
+	Discription  string `yaml:"discription"`
+	Select       []any  `yaml:"select"`
+	IsOnlySelect bool   `yaml:"is_only_select"`
+	Default      any    `yaml:"default"`
 }
 
 func LoadOption(file string) ([]Option, error) {

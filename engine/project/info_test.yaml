@@ -1,0 +1,12 @@
+name: test project
+discription: ""
+version: ""
+runtime:
+    name: go
+    # 对应不同的系统调用不同的命令
+    # verify_linux, verify_windows
+    # 检查运行环境，如果返回码不为 0 则视为校验失败
+
+    health_linux: go version
+    # 运行命令, [] 括号内的是占位符，运行时会将括号部分替换为对应的内容
+    run: go build; ./output [HOST]:[PORT]

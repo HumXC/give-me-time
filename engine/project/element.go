@@ -23,14 +23,14 @@ const (
 // Offset 是相对 Img 或者 Area 的偏移量
 type Element struct {
 	Type        string
-	Name        string      `json:"name"`
-	Discription string      `json:"discription"`
-	Img         string      `json:"img"`
-	Area        Area        `json:"area"`
-	Point       image.Point `json:"point"`
-	Element     []Element   `json:"element"`
-	Offset      image.Point `json:"offset"` // 该元素在 Img 或 Area 上的偏移位置
-	Threshold   float32     `json:"threshold"`
+	Name        string      `yaml:"name"`
+	Discription string      `yaml:"discription"`
+	Img         string      `yaml:"img"`
+	Area        Area        `yaml:"area"`
+	Point       image.Point `yaml:"point"`
+	Element     []Element   `yaml:"element"`
+	Offset      image.Point `yaml:"offset"` // 该元素在 Img 或 Area 上的偏移位置
+	Threshold   float32     `yaml:"threshold"`
 }
 type ElImg struct {
 	Discription string
@@ -49,10 +49,10 @@ type ElPoint struct {
 
 // 从左上角的点坐标到右下角的点坐标
 type Area struct {
-	X1 int `json:"x1"`
-	Y1 int `json:"y1"`
-	X2 int `json:"x2"`
-	Y2 int `json:"y2"`
+	X1 int `yaml:"x1"`
+	Y1 int `yaml:"y1"`
+	X2 int `yaml:"x2"`
+	Y2 int `yaml:"y2"`
 }
 
 //go:embed element_schame.json
