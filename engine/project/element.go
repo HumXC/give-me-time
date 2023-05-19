@@ -1,11 +1,13 @@
 package project
 
 import (
-	"encoding/json"
+	_ "embed"
 	"fmt"
 	"image"
 	"os"
 	"path"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -53,6 +55,9 @@ type Area struct {
 	Y2 int `json:"y2"`
 }
 
+//go:embed element_schame.json
+var elementSchame []byte
+
 // 从 file 加载 json 文件，反序列化成 Element 并验证 Element 的正确性
 // 内部已经调用了 VerifyElement
 func LoadElement(file string) ([]Element, error) {
@@ -65,11 +70,11 @@ func LoadElement(file string) ([]Element, error) {
 		return nil, makeErr(err)
 	}
 	m := make([]map[string]any, 0)
-	err = json.Unmarshal(eB, &e)
+	err = yaml.Unmarshal(eB, &e)
 	if err != nil {
 		return nil, makeErr(err)
 	}
-	err = json.Unmarshal(eB, &m)
+	err = yaml.Unmarshal(eB, &m)
 	if err != nil {
 		return nil, makeErr(err)
 	}
@@ -83,6 +88,7 @@ func LoadElement(file string) ([]Element, error) {
 	return e, nil
 }
 
+// 根据 Element 的规则为 Element.Type 赋值，其中 ms 用于判断 Img 等字段是否存在
 func SetType(es []Element, ms []map[string]any) []Element {
 	if len(es) == 0 {
 		return nil

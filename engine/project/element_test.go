@@ -1,6 +1,7 @@
 package project_test
 
 import (
+	_ "embed"
 	"encoding/json"
 	"os"
 	"testing"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestLoadElement(t *testing.T) {
-	_, err := project.LoadElement("element_test.json")
+	_, err := project.LoadElement("element_test.yaml")
 	if err != nil {
 		t.Error(err)
 	}
@@ -113,3 +114,9 @@ func TestSetType(t *testing.T) {
 		}
 	}
 }
+
+//go:embed element_schame.json
+var elementSchame []byte
+
+//go:embed element_test.yaml
+var elementTest []byte

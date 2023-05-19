@@ -1,0 +1,105 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "array",
+    "items": {
+        "$ref": "#/definitions/Element"
+    },
+    "description": "用 Element 数组描述一组元素，其中同一节点下元素的 name 不允许重复",
+
+    "definitions": {
+        "Element": {
+            "title": "Element",
+            "type": "object",
+            "description": "一个元素",
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "pattern": "^[^.]*$",
+                    "description": "这个元素的名称，不允许为空，不允许存在点(.)字符且同一节点下不允许重复"
+                },
+                "discription": {
+                    "type": "string"
+                },
+                "img": {
+                    "type": "string"
+                },
+                "threshold": {
+                    "type": "number"
+                },
+                "area": {
+                    "$ref": "#/definitions/Area"
+                },
+                "point": {
+                    "$ref": "#/definitions/Point"
+                },
+                "offset": {
+                    "$ref": "#/definitions/Offset"
+                },
+                "element": {
+                    "type": "array",
+                    "description": "元素列表，嵌套的 element 用以表示“子节点”",
+                    "items": {
+                        "$ref": "#/definitions/Element"
+                    }
+                }
+            },
+            "required": ["name"]
+        },
+        "Area": {
+            "title": "Area",
+            "type": "object",
+            "description": "使用两个点来描述一片矩形区域",
+            "additionalProperties": false,
+            "properties": {
+                "x1": {
+                    "type": "integer",
+                    "description": "区域左上角 x 的值"
+                },
+                "y1": {
+                    "type": "integer",
+                    "description": "区域左上角 y 的值"
+                },
+                "x2": {
+                    "type": "integer",
+                    "description": "区域右下角 x 的值"
+                },
+                "y2": {
+                    "type": "integer",
+                    "description": "区域右下角 y 的值"
+                }
+            },
+            "required": ["x1", "x2", "y1", "y2"]
+        },
+        "Point": {
+            "title": "Point",
+            "type": "object",
+            "description": "用于描述一个点",
+            "additionalProperties": false,
+            "properties": {
+                "x": {
+                    "type": "integer"
+                },
+                "y": {
+                    "type": "integer"
+                }
+            },
+            "required": ["x", "y"]
+        },
+        "Offset": {
+            "title": "Offset",
+            "description": "在模板匹配场景下用于偏移匹配结果的坐标。默认的匹配结果在图像左上角，实际返回的值是与 Offset 的和。",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "x": {
+                    "type": "integer"
+                },
+                "y": {
+                    "type": "integer"
+                }
+            },
+            "required": ["x", "y"]
+        }
+    }
+}
