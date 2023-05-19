@@ -176,7 +176,7 @@ func ParseElement(elements []Element) (map[string]ElImg, map[string]ElArea, map[
 	storePoint := func(k string, e Element) {
 		elPoint[k] = ElPoint{
 			Discription: e.Discription,
-			Point:       image.Pt(e.Point.X, e.Point.Y),
+			Point:       e.Point,
 		}
 	}
 	FlatElement(fElement, "", elements)

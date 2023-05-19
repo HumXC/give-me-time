@@ -2,12 +2,14 @@ package project_test
 
 import (
 	_ "embed"
-	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/HumXC/give-me-time/engine/project"
+	"gopkg.in/yaml.v3"
 )
+
+//go:embed element_test.yaml
+var elementTest []byte
 
 func TestLoadElement(t *testing.T) {
 	_, err := project.LoadElement("element_test.yaml")
@@ -82,17 +84,13 @@ func TestVerifyElement(t *testing.T) {
 }
 
 func TestSetType(t *testing.T) {
-	b, err := os.ReadFile("element_test.json")
-	if err != nil {
-		t.Fatal(err)
-	}
 	es := make([]project.Element, 0)
 	ms := make([]map[string]any, 0)
-	err = json.Unmarshal(b, &es)
+	err := yaml.Unmarshal(elementTest, &es)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = json.Unmarshal(b, &ms)
+	err = yaml.Unmarshal(elementTest, &ms)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,9 +112,3 @@ func TestSetType(t *testing.T) {
 		}
 	}
 }
-
-//go:embed element_schame.json
-var elementSchame []byte
-
-//go:embed element_test.yaml
-var elementTest []byte
